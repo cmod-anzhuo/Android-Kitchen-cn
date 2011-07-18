@@ -1,0 +1,716 @@
+############################################################################
+#
+# Copyright (c) 2010-2011 dsixda - dislam@rocketmail.com
+#
+# Android Kitchen is 100% free.  This script file is intended for personal
+# and/or educational use only.  It may not be duplicated for monetary
+# benefit or any other purpose without the permission of the developer.
+#
+############################################################################
+
+#
+# This script has two optional arguments:
+#
+# $1 = "for_zip" - use this option after update.zip created
+# $2 = 是/否 (快速模式) - 依靠现有的 $1
+#
+
+
+if [ "$1" == "" ]
+then
+  clear
+fi
+
+
+echo
+
+if [ -d WORKING_* ]
+then
+
+  cd WORKING_*
+  cd META-INF/com/google/android
+
+else
+  echo
+  echo "未找到工作目录，你需要先创建一个！"
+  exit 0
+fi
+
+
+
+if [ "$1" == "" ]
+then
+
+  echo "转换工具: update-script (Amend) 到 updater-script (Edify)"
+  echo "-------------------------------------------------------------------"
+  echo
+  echo "该脚本将会转换 update-script 为 updater-script，"
+  echo "转换完成后还会添加一个 update-binary"
+  echo 
+  echo "当你打包 ROM 时此选项仍然会进行提示，所以目前没有必要转换你的 update-script。"
+  echo "请注意，厨房目前不兼容 updater-scripts, 因此转换完成后将只有'打包工作目录中"
+  echo "的 ROM'功能可供使用。"
+  echo
+  echo "请确保有一个 update-script 文件在工作目录中的 META-INF/com/google/android"
+  echo "文件夹。"
+  echo
+  echo -n "继续执行转换(y/n)？(默认为：y)："
+
+  read proceed_now
+  echo
+
+  if [ "$proceed_now" == "n" ] 
+  then
+    cd ../../../../..
+    exit 0
+  fi
+
+  echo "--------------------------------------------------------------------------"
+  echo
+
+fi
+
+if [ -e update-script ]
+then
+  
+  if [ -e updater-script ]
+  then
+
+    if [ "$2" == "yes" ]
+    then
+      remove_it=y
+    else
+      echo "错误: 尽管在你的工作目录下有一个updater-script，但同时也有一个"
+      echo "      update-script，请移除一个。"
+      echo
+
+      echo -n "移除 updater-script 并继续转换 (y/n)? (默认为: y): "
+      read remove_it
+      echo
+    fi
+
+    if [ "$remove_it" != "n" ]
+    then
+      rm -vf updater-script
+      echo
+    else
+      cd ../../../../..
+      exit 0
+    fi
+  fi
+
+else
+  echo "错误: update-script 未找到！"
+  cd ../../../../..
+  exit 0
+fi
+
+
+cd ../../../../..
+
+
+if [ "$1" != "for_zip" ]
+then
+  echo "正在对update-script执行转换前的最后的修改检查 ..."
+  scripts/fix_pre_build 
+fi
+
+
+
+cd WORKING_*
+cd META-INF/com/google/android
+
+
+echo
+echo "--------------------------------------------------------------------------"
+echo
+
+echo "正在转换为updater-script, 请稍等 ..."
+echo
+
+cp update-script updater-script
+
+orig_list=( DATA SYSTEM CACHE SDEXT BOOT SDCARD )
+new_list=( userdata system cache sdext boot sdcard )
+new_list_str="0 1 2 3 4 5"
+
+echo "- 初步格式化 ..."
+
+sed -i \
+-e ':a;N;$!ba;s/,\n//g' \
+-e 's/assert[^\n]*[\n]*//g' \
+updater-script
+
+#
+# Remove leading whitespace and tabs
+# Not sure why this requires a separate statement from the above, to work!
+#
+sed -i -e 's/^[ \t]*//g' updater-script
+
+#
+# Remove lines with comments
+#
+sed -i -e '/^#/d' updater-script
+
+
+#
+# boot.img / radio.img / bootloader.img
+#
+img_list=( boot radio bootloader )
+
+for (( i = 0 ; i < ${#img_list[@]} ; i++ ))
+do
+  img_name=${img_list[${i}]}
+  str="write_raw_image PACKAGE:$img_name.img"
+
+  #
+  # Check to see if image file is written in a different manner;
+  # e.g. in CyanogenMod for Galaxy S they use run_program instead of
+  # write_raw_image for the boot.img in the updater-script.
+  #
+  line_num=`sed -n -e '/'"$str"'/{=;q}' updater-script`
+
+  if [ "$line_num" != "" ]
+  then
+    str2="package_extract_file $img_name.img TMP:$img_name.img"
+    str3="delete TMP:$img_name.img"
+    line_num3=`sed -n -e '/'"$str3"'/{=;q}' updater-script`
+
+    if [ "$line_num3" != "" ]
+    then
+      line_num_temp2=$(($line_num3-2))
+      str_temp=`sed -n -e ''"$line_num_temp2"'p' updater-script`
+
+      if [ "$str_temp" == "$str2" ] && [ $line_num3 -lt $line_num ]
+      then
+        sed -i -e ''"$line_num"'d' updater-script
+        continue
+      fi
+    fi
+  fi
+
+  sed -i -e 's/'"$str"'.*$/assert(package_extract_file("'"$img_name"'.img", "\/tmp\/'"$img_name"'.img"),\n       write_raw_image("\/tmp\/'"$img_name"'.img", "'"$img_name"'"),\n       delete("\/tmp\/'"$img_name"'.img"));/g' updater-script
+
+done
+
+
+#
+# radio.img
+#
+if [ `grep -c write_radio_image updater-script` -gt 0 ]
+then
+  echo "- 抱歉，正在忽略 'write_radio_image' - 无法进行转换 ..."
+  sed -i -e 's/write_radio_image PACKAGE:radio.img//g' updater-script
+fi
+
+#
+# hboot.img
+#
+if [ `grep -c write_hboot_image updater-script` -gt 0 ]
+then
+  echo "- 抱歉，正在忽略 'write_hboot_image' - 无法进行转换  ..."
+  sed -i -e 's/write_hboot_image PACKAGE:hboot.img//g' updater-script
+fi
+
+
+#
+# copy_dir 
+#
+echo "- copy_dir ..."
+
+sed -i \
+  -e 's/copy_dir \(.*\)/package_extract_dir(\"\1\");/g' \
+  -e 's/\(package_extract_dir.*\) \(.*\)/\1", "\2/g' \
+  -e 's/\(package_extract_dir.*\)PACKAGE:/\1/g' \
+  -e 's/\(package_extract_dir.*\)SYSTEM:\([^)]*\))/\1\/system\/\2)/g' \
+  -e 's/\(package_extract_dir.*\)DATA:\([^)]*\))/\1\/data\/\2)/g' \
+  -e 's/\(package_extract_dir.*\)TMP:\([^)]*\))/\1\/tmp\/\2)/g' \
+  -e 's/\(package_extract_dir.*\)SDCARD:\([^)]*\))/\1\/sdcard\/\2)/g' \
+  -e 's/\(package_extract_dir.*\)BOOT:\([^)]*\))/\1\/boot\/\2)/g' \
+  -e 's/\(package_extract_dir.*\)CACHE:\([^)]*\))/\1\/cache\/\2)/g' \
+  updater-script
+
+
+
+# Add mount before it
+for new in ${new_list[@]}
+do
+  if [ "$new" == "userdata" ]
+  then
+    new2=data
+  else
+    new2=$new
+  fi
+
+  sed -i \
+    -e 's/package_extract_dir(\([^,]*\), "\/'"$new2"'\(.*\)")/mount("MTD", "'"$new"'", "\/'"$new2"'");\npackage_extract_dir(\1, "\/'"$new2"'\2")/g' \
+    updater-script
+done
+
+
+#
+# set_perm_recursive
+#
+echo "- set_perm_recursive ..."
+
+sed -i \
+  -e 's/set_perm_recursive \(.*\)/set_perm_recursive(\1);/g' \
+  -e 's/\(set_perm_recursive.*[0-9]*\) \([0-9]*\) \([0-9]*\) \([0-9]*\) /\1, \2, \3, \4, /g' \
+  -e 's/\(set_perm_recursive.*\)SYSTEM:)/\1\"\/system\")/g' \
+  -e 's/\(set_perm_recursive.*\)SYSTEM:\([^)]*\))/\1\"\/system\/\2\")/g' \
+  -e 's/\(set_perm_recursive.*\)DATA:\([^)]*\))/\1\"\/data\/\2\")/g' \
+  -e 's/\(set_perm_recursive.*\)TMP:\([^)]*\))/\1\"\/tmp\/\2\")/g' \
+  -e 's/\(set_perm_recursive.*\)CACHE:\([^)]*\))/\1\"\/cache\/\2\")/g' \
+  updater-script
+
+
+
+#
+# set_perm
+#
+echo "- set_perm ..."
+
+sed -i \
+  -e 's/set_perm \(.*\)/set_perm(\1);/g' \
+  -e 's/\(set_perm.*[0-9]*\) \([0-9]*\) \([0-9]*\) /\1, \2, \3, /g' \
+  -e 's/\(set_perm.*\)SYSTEM:\([^)]*\))/\1\"\/system\/\2\")/g' \
+  -e 's/\(set_perm.*\)DATA:\([^)]*\))/\1\"\/data\/\2\")/g' \
+  -e 's/\(set_perm.*\)TMP:\([^)]*\))/\1\"\/tmp\/\2\")/g' \
+  -e 's/\(set_perm.*\)CACHE:\([^)]*\))/\1\"\/cache\/\2\")/g' \
+  updater-script
+
+
+#
+# run_program
+#
+echo "- run_program ..."
+line_num=`sed -n -e '/run_program /{=;q}' updater-script`
+
+while [ "$line_num" != "" ]
+do
+  sed -i \
+    -e ''$line_num' s/run_program \(.*\)/run_program(\"\1\");/g' \
+    -e ''$line_num' s/ /", "/g' \
+    -e ''$line_num' s/PACKAGE:/\//g' \
+    -e ''$line_num' s/TMP:/\/tmp\//g' \
+    -e ''$line_num' s/BOOT:/\/boot\//g' \
+    -e ''$line_num' s/SYSTEM:/\/system\//g' \
+    -e ''$line_num' s/DATA:/\/data\//g' \
+    updater-script
+
+  # Check for scripts that are at the root of the ROM; move them to /tmp; 
+  # otherwise they won't run!!  Set permissions before you run them from /tmp.
+ 
+  sed -i \
+    -e ''$line_num' s/run_program("\/\([^\/^\"]*\)"\(.*\)/package_extract_file("\1", "\/tmp\/\1");\nrun_program("\/tmp\/\1"\2/g' \
+    updater-script
+
+  # First check if permission already exists before adding it
+  prog_name=`sed -n -e ''$line_num' s/package_extract_file("[^\"]*",[ ]*"\([^\"]*\)");/\1/p' updater-script`
+
+  if [ "$prog_name" != "" ]
+  then
+    sed -i \
+      -e ''$line_num' s/package_extract_file("\([^\"]*\)",[ ]*"\([^\"]*\)");/package_extract_file("\1", "\2");\nset_perm(0, 0, 0777, "\2");/g' \
+      updater-script
+  fi
+
+  line_num=`sed -n -e '/run_program /{=;q}' updater-script`
+done
+
+
+
+
+#
+# package_extract_file
+#
+echo "- package_extract_file ..."
+
+sed -i \
+  -e 's/package_extract_file PACKAGE:/package_extract_file /g' \
+  -e 's/package_extract_file \(.*\)/package_extract_file(\"\1\");/g' \
+  -e 's/\(package_extract_file[^,]*\) \(.*\)/\1", "\2/g' \
+  -e 's/\(package_extract_file.*\)(\"SYSTEM:\([^)]*\))/\1(\"system\/\2)/g' \
+  -e 's/\(package_extract_file.*\)(\"DATA:\([^)]*\))/\1(\"data\/\2)/g' \
+  -e 's/\(package_extract_file.*\)(\"TMP:\([^)]*\))/\1(\"tmp\/\2)/g' \
+  -e 's/\(package_extract_file.*\)SYSTEM:\([^)]*\))/\1\/system\/\2)/g' \
+  -e 's/\(package_extract_file.*\)DATA:\([^)]*\))/\1\/data\/\2)/g' \
+  -e 's/\(package_extract_file.*\)TMP:\([^)]*\))/\1\/tmp\/\2)/g' \
+  updater-script
+
+
+#
+# show_progress
+#
+echo "- show_progress ..."
+
+sed -i \
+  -e 's/show_progress \(.*\)/show_progress(\1);/g' \
+  -e 's/\(show_progress.*\) \(.*\)/\1, \2/g' \
+  updater-script
+
+
+
+#
+# delete / delete_recursive
+#
+echo "- 删除/delete_recursive ..."
+
+sed -i \
+  -e 's/delete \(.*\)/delete(\"\1\");/g' \
+  -e 's/delete_recursive \(.*\)/delete_recursive(\"\1\");/g' \
+  -e 's/\(delete.*\)SYSTEM:/\1\/system\//g' \
+  -e 's/\(delete.*\)DATA:/\1\/data\//g' \
+  -e 's/\(delete.*\)CACHE:/\1\/cache\//g' \
+  -e 's/\(delete.*\)TMP:\([^)]*\))/\1\/tmp\/\2)/g' \
+  -e 's/\(delete.*\)TMP:/\1\/tmp\//g' \
+  -e 's/\(delete.*\)SDEXT:/\1\/sdext\//g' \
+  updater-script
+
+
+
+#
+# symlink
+#
+echo "- symlink ..."
+
+sed -i \
+  -e 's/symlink \(.*\)/symlink(\"\1\");/g' \
+  -e 's/\(symlink("[^\ ]*\)[ ]*\([^\"]*");\)/\1", "\2/g' \
+  -e 's/\(symlink.*\)SYSTEM:\(.*\)/\1\/system\/\2/g' \
+  -e 's/\(symlink.*\)DATA:\(.*\)/\1\/data\/\2/g' \
+  updater-script
+
+
+
+#
+# write_raw_image
+#
+echo "- write_raw_image ..."
+  
+sed -i \
+  -e 's/write_raw_image \(.*\)/write_raw_image(\"\1\");/g' \
+  -e 's/\(write_raw_image.*"\) \(.*\)/\1, "\2/g' \
+  -e 's/\(write_raw_image.*\)PACKAGE:/\1/g' \
+  -e 's/\(write_raw_image.*\)BOOT:/\1boot/g' \
+  -e 's/\(write_raw_image.*\)TMP:\([^)]*\))/\1\/tmp\/\2)/g' \
+  updater-script
+
+
+
+#
+# format, mount
+#
+echo "- 格式化和挂载 ..."
+
+for i in $new_list_str
+do
+
+  orig=${orig_list[${i}]}
+  new=${new_list[${i}]}
+
+  new2=$new
+  if [ "$new" == "userdata" ]
+  then
+    new2=data
+  fi
+
+  #
+  # Convert the 'format' line
+  #
+  sed -i -e 's/format '"$orig"':/format("MTD", "'"$new"'");/g' updater-script
+  sed -i -e 's/format \(.*\) '"$orig"':/format("\1", "MTD", "'"$new"'");\nmount("\1", "MTD", "'"$new"'", "\/'"$new2"'");/g' updater-script
+
+  #
+  # We don't want to move/remove the mount command for the boot partition, due to 
+  # the boot.img commands we used previously... unless we have a NAND ROM!
+  #
+  if [ "$new" == "boot" ]
+  then
+
+    if [ -e ../../../../boot/initrd.gz ] && [ -e ../../../../boot/zImage ]
+    then
+        sed -i -e 's/\(format(.*"\/boot");\)/\1\nmount("MTD", "boot", "\/boot");/g' updater-script
+
+        grep_mnt=`grep "mount(.* \"/boot\");" updater-script`
+
+        if [ "$grep_mnt" == "" ]
+        then
+          sed -i -e 's/\(mount.*"\/system");\)/\1\nmount("MTD", "boot", "\/boot");/g' updater-script
+        fi          
+    fi
+
+    continue
+  fi
+
+  grep_mnt=`grep "mount(\"MTD\", \"$new\", \"/$new2\");" updater-script`
+
+
+  #
+  # If a special mount is found, then remove the regular mount
+  #
+
+  grep_fmt2=`grep "format(\"[A-Za-z0-9]*\", \"MTD\", \"$new\");" updater-script`
+
+  if [ "$grep_fmt2" != "" ]
+  then
+
+    grep_mnt2=`grep "mount(\"[A-Za-z0-9]*\", \"MTD\", \"$new\", \"/$new2\");" updater-script`
+
+    if [ "$grep_mnt" != "" ] && [ "$grep_mnt2" != "" ]
+    then
+      sed -i -e '/mount("MTD", "'"$new"'", "\/'"$new2"'");/d' updater-script
+    fi
+  fi
+
+
+  #
+  # Move the associated 'mount' line (if it exists), so that it goes directly below the 'format' line
+  #
+
+  grep_fmt=`grep "format(\"MTD\", \"$new\");" updater-script`
+
+  if [ "$grep_fmt" != "" ]
+  then
+
+    if [ "$grep_mnt" != "" ]
+    then
+      # Delete the line
+      sed -i -e '/mount("MTD", "'"$new"'", "\/'"$new2"'");/d' updater-script
+
+      # Add it after the format
+      sed -i -e 's/format("MTD", "'"$new"'");/format("MTD", "'"$new"'");\nmount("MTD", "'"$new"'", "\/'"$new2"'");/g' updater-script
+    fi
+  fi
+
+done
+
+
+#
+# Look for any other 'format' commands that were not covered above
+#
+line_num=`sed -n -e '/format /{=;q}' updater-script`
+
+while [ "$line_num" != "" ]
+do
+  sed -i \
+    -e ''$line_num' s/format \(.*\)/format(\"\1\");/g' \
+    -e ''$line_num' s/ /", "/g' \
+    -e ''$line_num' s/format\(.*\));/format\1);\nmount\1, "???");/g' \
+    updater-script
+
+  line_num=`sed -n -e '/format /{=;q}' updater-script`
+done
+
+
+#
+# Fix any incomplete ("???") mounts, using the updater-script.orig file
+#
+if [ -e updater-script.orig ]
+then
+  line_num=`sed -n -e '/^mount(.*???/{=;q}' updater-script`
+
+  while [ "$line_num" != "" ]
+  do
+
+    partial_str=`grep "^mount(" updater-script | grep -m 1 ??? | \
+                sed \
+                  -e 's/"???");//g' \
+                  -e 's/"/\\\"/g' `
+
+    # Get the string we want, from the original file, but replace special characters
+    # such as the forward slash to prevent formatting issues
+    orig_str=`grep -m 1 "$partial_str" updater-script.orig | sed -e 's/\//fwdslash/g'`
+
+    if [ "$orig_str" != "" ]
+    then
+      sed -i \
+        -e ''$line_num' s/.*/'"$orig_str"'/g' \
+        -e ''$line_num' s/fwdslash/\//g' \
+      updater-script
+    else
+      # We don't want to be stuck in an infinite loop
+      break
+    fi
+
+    line_num=`sed -n -e '/^mount(.*???/{=;q}' updater-script` 
+  done
+fi
+
+
+#
+# unmount
+#
+echo "- unmount ..."
+for new in ${new_list[@]}
+do
+
+  if [ "$new" == "userdata" ]
+  then
+    new2=data
+  else
+    new2=$new
+  fi
+
+  grep_mnt=`grep "mount(.* \"/$new\");" updater-script`
+
+  if [ "$grep_mnt" != "" ] 
+  then
+    echo "unmount(\"/$new2\");" >> updater-script      
+  fi
+
+done
+
+#
+# Fix for systems with different mounts, e.g. ext3 types
+# e.g. 'userdata' was replaced by /dev/block/whatever
+#
+grep_mnt=`grep "mount(.* \"/data\");" updater-script`
+
+if [ "$grep_mnt" != "" ] 
+then
+  echo "unmount(\"/data\");" >> updater-script      
+fi
+
+
+
+
+
+echo "- 格式化完成 ..."
+
+#
+# Fix up run_program parameters that contain special characters
+#
+
+sed -i \
+  -e 's/\[sp\]/ /g' \
+  -e 's/\[cr\]/\n/g' \
+  -e 's/\[sc\]/;/g' \
+  -e 's/\[co\]/,/g' \
+  updater-script
+
+#
+# Check if shell script had already unmounted the partition
+#
+
+if [ `grep -c "run_program.*umount" updater-script` ]
+then
+
+  for new in ${new_list[@]}
+  do
+    if [ "$new" == "userdata" ]
+    then
+      new=data
+    fi
+
+    grep_mnt=`grep "mount(.* \"/$new\");" updater-script`
+    grep_umnt=`grep -c "umount /$new" updater-script`
+    
+    if [ $grep_umnt -gt 0 ] && [ "$grep_mnt" != "" ]
+    then
+      sed -i -e '/unmount("\/'"$new"'");/d' updater-script      
+    fi
+  done
+
+fi
+
+
+#
+# Other commands 
+#
+sed -i \
+  -e 's/add_upgrade_property/add_upgrade_property();/g' \
+  -e 's/install_modem_package/install_modem_package();/g' \
+  updater-script
+
+sed -i -e 's/write_blob_raw_image PACKAGE:blob/assert(package_extract_file("blob", "\/tmp\/blob"),\n       write_blob_raw_image("\/tmp\/blob", "staging"),\n       delete("\/tmp\/blob"));/g' updater-script
+
+
+#
+# Clean up any mess left by my script
+#
+sed -i \
+  -e 's/\/");/");/g' \
+  -e 's/; $/;/g' \
+  updater-script
+
+#
+# Remove blank lines
+#
+sed -i -e '/^$/d' updater-script
+
+#
+# Cool solution from the web :-)
+#
+# Delete duplicate, consecutive lines from a file (emulates "uniq").
+# First line in a set of duplicate lines is kept, rest are deleted.
+#
+sed -i -e '$!N; /^\(.*\)\n\1$/!P; D' updater-script
+
+
+#
+# Device-specific mount points
+#
+cd ../../../../..
+scripts/adjust_mnt updater-script
+cd WORKING_*
+cd META-INF/com/google/android
+
+
+
+if [ -e updater-script ]
+then
+
+  cd ../../../../..
+  scripts/check_which_update_binary
+  cd WORKING_*
+  cd META-INF/com/google/android
+
+  echo
+  echo "--------------------------------------------------------------------------"
+  echo
+
+  if [ "$2" != "yes" ]
+  then
+    echo "已成功在 META-INF/com/google/android 文件夹中创建了一个 updater-script。"
+    echo "请检查一下，确定其中没有错误。同时已成功添加一个 updater-binary。"
+    echo ""
+  fi      
+
+  if [ "$1" != "for_zip" ]
+  then
+    mv -f update-script update-script.orig
+    echo "原 update-script 已重命名为 update-script.orig -"
+    echo "它并不会存在于你已完成打包的 ROM 之中。"
+  else
+
+    if [ "$2" == "no" ]
+    then
+      echo "请勿删除 META-INF/com/google/android 文件夹下的任何文件."
+      echo
+    fi      
+  fi
+
+  grep_fmt=`grep -n "^format(" updater-script`
+  grep_mount=`grep -n "^mount(" updater-script`
+  grep_huh=`grep -n "???" updater-script`
+
+  if [ "$grep_huh" != "" ]
+  then
+    echo
+    echo "--------------------------------------------------------------------------"
+    echo
+    echo "注意：请确保你修正了以下行号中的未知引用。如果你还有原始版本"
+    echo "     的 updater-script，与其进行对比一下。"
+    echo
+    echo $grep_huh | sed -e 's/;[ ]*/;\n/g'    
+    echo
+  fi
+
+
+else
+  echo "错误: updater-script 创建失败！"
+fi
+
+cd ../../../../..
+

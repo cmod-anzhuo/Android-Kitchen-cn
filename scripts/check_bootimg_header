@@ -1,0 +1,67 @@
+############################################################################
+#
+# Copyright (c) 2010-2011 dsixda - dislam@rocketmail.com
+#
+# Android Kitchen is 100% free.  This script file is intended for personal
+# and/or educational use only.  It may not be duplicated for monetary
+# benefit or any other purpose without the permission of the developer.
+#
+############################################################################
+
+#
+# This script has one optional parameter:
+#
+# $1 = folder name
+#
+
+base_dir=`pwd`
+
+if [ "$1" == "" ]
+then
+  cd WORKING_*
+else
+  cd $1
+fi
+
+#
+# Check for strange boot.img header
+#
+
+check_header=`od -A n -h -j 0 -N 8 boot.img | sed 's/ //g'`
+
+if [ "$check_header" != "4e415244494f2144" ]
+then
+
+  echo
+  echo "未在 boot.img 中找到 Android 头"
+
+  # Mac OS X adds extra spaces between the numbers!
+  hex_offset=`od -x -A x boot.img | grep -m 1 "4e41 [ ]*5244 [ ]*494f [ ]*2144" | sed -e 's/ .*//'`
+
+  if [ "$hex_offset" != "" ]
+  then
+
+    #
+    # Remove leading bytes before the Android header 
+    #
+
+    dec_offset=`printf "%d" 0x$hex_offset`
+    echo "在偏移位置 $dec_offset 处找到了 Android 头"
+    echo "正在删除它之前的多余数据以便可以准确读取 ..."
+
+    dd if=boot.img of=newboot.img bs=1 skip=$dec_offset
+    rm -f boot.img
+    mv newboot.img boot.img
+    echo
+    cd $base_dir
+    exit 1
+
+  else
+    echo "警告：未能在 boot.img 的任何位置定位到 Android 头"
+  fi
+fi
+
+
+cd $base_dir
+exit 0
+

@@ -1,0 +1,19 @@
+
+echo
+echo "仅仅是一个示范"
+echo
+
+if [ -d WORKING_* ]
+then
+  echo "已找到工作目录："
+else
+  echo "未找到工作目录！"
+  exit 0
+fi
+
+cd WORKING_*
+echo `pwd`
+echo
+ls -lrt
+cd ..
+

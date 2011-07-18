@@ -1,0 +1,273 @@
+############################################################################
+#
+# Copyright (c) 2010-2011 dsixda - dislam@rocketmail.com
+#
+# Android Kitchen is 100% free.  This script file is intended for personal
+# and/or educational use only.  It may not be duplicated for monetary
+# benefit or any other purpose without the permission of the developer.
+#
+############################################################################
+
+clear
+
+base_path=`pwd`
+util_dir=../tools/signapk_files
+
+while :
+do
+
+  clear
+
+  echo
+  echo "签名文件"
+  echo "----------"
+  echo 
+  echo "NOTE: This section is for advanced users.  If you are making simple"
+  echo "customizations to your ROM, then signing APKs is not necessary.  If"
+  echo "you have an unsigned update ZIP file, then you can sign it here."
+  echo 
+  echo
+  echo "输入选择:"
+  echo 
+  echo "  a = 签名工作目录中所有的APK"
+  echo "  s = 签名一个设置好的APK文件夹"
+  echo "  z = 签名一个非工作目录中的 APK 和/或 ZIP"
+  echo "  x = 退出"
+  echo
+  echo -n "? "
+
+  read enterChoice
+
+
+  #
+  # All files
+  #
+
+  if [ "$enterChoice" == "a" ]
+  then
+
+    echo
+    cd $base_path
+
+    if [ ! -d WORKING_* ]
+    then
+      echo "没找到工作目录!"
+      scripts/press_enter
+      continue
+    fi
+
+    cd WORKING_*
+
+    grep_cmd=`find system/framework | grep \\.apk$ | sort -f`
+    grep_cmd="$grep_cmd `find system/app | grep \\.apk$ | sort -f`"
+
+    if [ -d data/app ]
+    then
+      echo
+      echo "注意: 如果你签名了所有 /data/app 文件夹中的 *.apk 文件"
+      echo "      它们在电子市场中的更新将会失败。你可以选择现在不签名他们，"
+      echo "      迟些时候给你需要的文件分别签名。"
+      echo
+      echo "      所有 /system/app 和 /system/framework 文件夹中"
+      echo "      的 *.apk 文件将会依然被签名。"
+      echo 
+      echo
+      echo -n "签名所有/data/app下 *.apk(y/n)? (默认: n): "
+      read do_data
+
+      echo
+
+      if [ "$do_data" == "y" ]
+      then
+        grep_data=`find data/app | grep \\.apk$ | sort -f`
+        grep_cmd="$grep_data $grep_cmd"
+      else
+        echo "不签名 data/app/*.apk"
+      fi
+    fi
+
+    for filename in $grep_cmd
+    do
+      new_file=$filename\_new
+      echo "签名 $filename ..."
+
+      java -jar $util_dir/signapk.jar $util_dir/testkey.x509.pem $util_dir/testkey.pk8 $filename $new_file
+
+      if [ -e $new_file ]
+      then
+        mv -f $new_file $filename 
+      else
+        echo "错误: 不能签名"
+      fi
+    done
+
+    cd $base_path
+    echo
+    echo "结束"
+    scripts/press_enter
+
+  #
+  # Single file / Set of files
+  #
+
+  elif [ "$enterChoice" == "s" ] 
+  then
+
+    echo
+    cd $base_path
+
+    if [ ! -d WORKING_* ]
+    then
+      echo "没有找到工作目录!"
+      scripts/press_enter
+      continue
+    fi
+
+    cd WORKING_*
+
+    grep_cmd=`find . | grep .apk$ | sort -f`
+    count=0
+
+    rm -f ../temp.list
+
+    echo >> ../temp.list
+    echo "All APKs:" >> ../temp.list
+    echo >> ../temp.list
+
+    for filename in $grep_cmd 
+    do
+      count=$(($count+1))
+
+      # Store file names in an array
+      file_array[$count]=$filename
+      file_to_sign[$count]=0
+      echo "  ($count) $filename" >> ../temp.list
+
+    done
+
+    more ../temp.list
+
+    rm -f ../temp.list
+
+
+    echo
+    echo "输入文件号码, 或者设置文件文件号 (0 = 取消)"
+    echo "例如:  1 24-39 22"
+    echo -n "> "
+
+    read enterNumbers
+    echo
+
+    if [ "$enterNumbers" == "0" ] || [ "$enterNumbers" == "" ]
+    then
+      continue
+   
+    else 
+      
+      #
+      # Parse the input and set the array
+      #
+
+      for num in $enterNumbers
+      do
+
+        num_start=$num
+        num_end=$num
+
+        num_start=`echo $num | sed 's/\([0-9]*\)-[0-9]*/\1/'`
+        num_end=`echo $num | sed 's/[0-9]*-\([0-9]*\)/\1/'`
+
+        if [ "$num_start" == "" ] || [ "`echo $num_start | sed 's/[0-9]*//'`" != "" ]
+        then
+          echo "错误: 无效输入 ('$num' 不是一个有效的号码或者范围)"
+          continue
+        fi
+
+        if [ "$num_end" == "" ] || [ "`echo $num_end | sed 's/[0-9]*//'`" != "" ]
+        then
+          echo "错误: 无效输入 ('$num' 不是一个有效的号码或者范围)"
+          continue
+        fi
+
+        if [ $num_end -lt $num_start ]
+        then
+          echo "错误: 无效输入 ($num_start 大于 $num_end)"
+          continue
+        fi
+
+        
+        #
+        # Designate the files that were selected
+        #
+
+        for (( i=$num_start; i<=$num_end; i++ ))
+        do
+      
+          if [ "${file_array[$i]}" == "" ]
+          then
+            echo "错误: 无文件在 #$i"
+            continue
+          else
+            file_to_sign[$i]=1
+          fi
+
+        done
+
+      done
+
+      #
+      # Go through the array and sign the appropriate files
+      #
+
+      for (( i=1; i<=$count; i++ ))
+      do
+
+        if [ "${file_to_sign[$i]}" == "1" ]
+        then
+          
+          file_chosen=${file_array[$i]}
+        
+          if [ "$file_chosen" == "" ]
+          then
+            echo "错误: 无效输入 (文件在 $i 没有找到)"
+            cd $base_path
+            scripts/press_enter
+            break
+          fi
+
+          new_file=$file_chosen\_new
+          echo "签名 #$i: $file_chosen ..."
+          java -jar $util_dir/signapk.jar $util_dir/testkey.x509.pem $util_dir/testkey.pk8 $file_chosen $new_file
+          
+          if [ -e $new_file ]
+          then
+            mv -f $new_file $file_chosen
+          else
+            echo "错误: 不能签名"
+            cd $base_path
+            scripts/press_enter
+          fi
+        fi
+
+      done
+
+      cd $base_path
+      scripts/press_enter
+    fi
+
+
+  elif [ "$enterChoice" == "z" ]
+  then
+    scripts/sign_files_in_folder    
+    scripts/press_enter
+
+  elif [ "$enterChoice" == "x" ]
+  then
+    exit 0
+  else 
+    echo "无效选项"
+    continue
+  fi
+
+done
+

@@ -1,0 +1,20 @@
+############################################################################
+#
+# Copyright (c) 2010-2011 dsixda - dislam@rocketmail.com
+#
+# Android Kitchen is 100% free.  This script file is intended for personal
+# and/or educational use only.  It may not be duplicated for monetary
+# benefit or any other purpose without the permission of the developer.
+#
+############################################################################
+
+
+echo
+echo -n "你确定要查看此ROM的信息吗(y/n)(默认为：y)："
+  
+read proceed_show
+if [ "$proceed_show" != "n" ]
+then
+  scripts/show_rom_info 
+fi
+

@@ -1,0 +1,69 @@
+############################################################################
+#
+# Copyright (c) 2010-2011 dsixda - dislam@rocketmail.com
+#
+# Android Kitchen is 100% free.  This script file is intended for personal
+# and/or educational use only.  It may not be duplicated for monetary
+# benefit or any other purpose without the permission of the developer.
+#
+############################################################################
+
+
+cd WORKING_*
+cd META-INF/com/google/android
+
+if [ -e update-binary.orig ]
+then
+  echo
+  echo "正在复制原始的 update-binary"
+  cp -vf update-binary.orig update-binary
+
+elif [ -e update-binary ]
+then
+  echo
+  echo "正在使用现有的 update-binary"
+  echo
+
+else
+
+  grep_emmc=`grep -c "mount(.*,.*,.*,.*)" updater-script`
+  grep_ext3=`grep -c "mount(\"ext3\"" updater-script`
+  grep_mtd=`grep -c "mount(\"MTD\"" updater-script`
+
+  echo
+  echo "正在复制 update-binary ..."
+
+  if [ $grep_emmc -gt 0 ]
+  then
+
+    #
+    # Four args for mount
+    #
+    # e.g. mount("ext3", "EMMC", "/dev/block/mmcblk0p26", "/data");
+    # e.g. mount("yaffs2", "MTD", "userdata", "/data");
+    #
+    cp -vf ../../../../../tools/update_files/emmc-update-binary update-binary
+
+  elif [ $grep_ext3 -gt 0 ]
+  then
+
+    #
+    # Three args for mount, but no MTD or assert
+    #
+    # mount("ext3", "/dev/block/mmcblk0p25", "/system");
+    #
+    cp -vf ../../../../../tools/update_files/ext3-update-binary update-binary
+
+  else
+
+    #
+    # Three arguments, can use MTD and assert 
+    #
+    # e.g. mount("MTD", "userdata", "/data");
+    #
+    cp -vf ../../../../../tools/update_files/mtd-update-binary update-binary
+  fi
+
+fi
+
+cd ../../../../..

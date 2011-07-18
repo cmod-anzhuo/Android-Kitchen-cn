@@ -1,0 +1,216 @@
+############################################################################
+#
+# Copyright (c) 2010-2011 dsixda - dislam@rocketmail.com
+#
+# Android Kitchen is 100% free.  This script file is intended for personal
+# and/or educational use only.  It may not be duplicated for monetary
+# benefit or any other purpose without the permission of the developer.
+#
+############################################################################
+
+#
+# This script has two optional arguments:
+#
+# $1 = "no_create" 或 "create" 或 "create_working"
+#         - 必须指定 no_create 如果工作目录已存在
+# $2 = "kernel_only"或"name_given" - 如果这个指定$1被强制
+#
+
+if [ "$1" == "no_create" ] 
+then
+  build_dir=`ls | grep -m 1 WORKING_`
+
+  mkdir $build_dir/system
+  mv $build_dir/system.img $build_dir/system
+
+else
+
+  current_dir=`pwd`
+  dest_dir=$current_dir/original_update
+  scripts/check_no_bootimg $dest_dir
+
+
+  #
+  # Check for system.img and boot.img in original_update  
+  #
+  if [ -e original_update/system.img ]
+  then
+    echo "已发现 original_update/system.img"
+    if [ -e original_update/boot.img ]
+    then
+      echo "已发现 original_update/boot.img"
+    else
+      echo "错误：未发现 original_update/boot.img"
+      echo
+      exit 1
+    fi
+  else
+
+    if [ -e original_update/boot.img ]
+    then
+      echo "已发现 original_update/boot.img"
+      echo "错误：未发现 original_update/system.img"
+    else
+      echo
+      echo "错误：未在original_update文件夹中找到ROM！"
+    fi
+
+    exit 1
+  fi
+
+
+  #
+  # Working folder name
+  #
+  build_dir=`scripts/set_working_folder_name $2`
+
+  echo
+  echo "正在创建工作目录 $build_dir ..."
+  mkdir $build_dir
+  mkdir $build_dir/system
+
+  echo "正在复制 boot.img 和 system.img ..."
+  cp original_update/boot.img $build_dir
+  cp original_update/system.img $build_dir/system
+
+fi
+
+
+#
+# Directory tree
+#
+mkdir -p $build_dir/META-INF/com/google/android
+echo
+echo "正在添加一个 update-script ..."
+cp tools/update_files/update-script $build_dir/META-INF/com/google/android/
+
+
+#
+# Check for location of Android header in boot.img so that it can be
+# added to working folder correctly
+#
+scripts/check_bootimg_header
+
+
+#
+# Check for YAFFS/EXT*
+#
+
+system_dir=$build_dir/system
+
+scripts/check_if_img_yaffs $system_dir system.img
+
+is_yaffs=$?
+
+if [ "$is_yaffs" == "1" ]
+then
+
+  if [ `uname | grep CYGWIN` ]
+  then
+    unyaffs_file=unyaffs.exe
+  else
+    unyaffs_file=unyaffs
+  fi
+    
+  scripts/compile_unyaffs
+  if [ "$?" == "1" ]
+  then
+    exit 0
+  fi
+
+  echo
+  echo "正在提取 system.img 中的内容 ..."
+  cd $system_dir
+  result=`../../tools/unyaffs_files/$unyaffs_file system.img 2>/dev/null`
+
+else
+
+  echo
+  echo "检测到此 ROM 中并非是 YAFFS 格式的文件"
+  echo
+
+  cd $system_dir
+
+  # Get full path
+  system_dir=`pwd`
+
+  cd ../..
+  scripts/extract_ext3_img $system_dir system.img
+  cd $system_dir
+
+fi
+
+
+check_dump=`ls unyaffs*stackdump* 2>/dev/null`
+rm -f system.img 2>/dev/null
+
+if [ "$?" == "1" ]
+then
+  echo
+  echo "警告: system.img使用中.关闭应用程序后手动移除."
+  echo
+fi
+
+
+cd ..
+
+if [ "$check_dump" != "" ]
+then
+  echo
+  echo "错误：在 /system 文件夹中找到了与 unyaffs 不兼容的 stackdump 文件。"
+  exit 1
+fi
+
+if [ ! -d system ]
+then
+  echo
+  echo "错误：未找到 /system 文件夹！"
+  exit 1
+fi
+
+if [ ! -d system/framework ]
+then
+  echo
+  echo "错误: 没有发现 /system/framework文件夹!"
+  exit 1
+fi
+
+if [ ! -d system/app ]
+then
+  echo
+  echo "错误: 没有发现 /system/app文件夹!"
+  exit 1
+fi
+
+if [ "`ls system`" == "" ]
+then
+  echo 
+  echo "错误：/system 文件夹为空！"
+  echo
+  exit 1
+fi
+
+cd ..
+
+
+# Wi-fi fix - required for some Huawei devices
+scripts/fix_huawei_wifi
+
+
+if [ "$2" != "kernel_only" ] && [ "$2" != "name_given" ]
+then
+  scripts/fix_update_script 
+
+  # Modify the update-script with features found in Nandroid backup
+  scripts/fix_update_script_with_features
+
+  scripts/remove_recovery
+fi
+
+echo "正在列出 $build_dir 的内容："
+echo
+ls -l $build_dir
+
+echo
+echo "已完成工作目录的设置！"
+

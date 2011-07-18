@@ -1,0 +1,69 @@
+############################################################################
+#
+# Copyright (c) 2010-2011 dsixda - dislam@rocketmail.com
+#
+# Android Kitchen is 100% free.  This script file is intended for personal
+# and/or educational use only.  It may not be duplicated for monetary
+# benefit or any other purpose without the permission of the developer.
+#
+############################################################################
+
+#
+# This script has one optional parameter:
+#
+# $1 = folder containing boot.img
+#
+
+
+base_dir=`pwd`
+
+if [ "$1" == "" ]
+then
+  if [ ! -d WORKING_* ]
+  then
+    echo "未找到工作目录！"
+    exit 0
+  fi
+
+  cd WORKING_*
+  working_folder=`pwd`
+
+else
+  cd $1
+  working_folder=`pwd`
+fi
+
+
+echo
+
+if [ -e boot.img ] 
+then
+
+  cd $base_dir
+  dec_offset=`scripts/get_boot_img_page_size $working_folder`
+
+  if [ "$dec_offset" != "" ]
+  then
+
+    if [ "$dec_offset" == "0" ]
+    then
+      echo "错误: 内核偏移位置（页面大小）是 0"
+      exit 1
+    fi
+
+    echo "在 boot.img 偏移位置 $dec_offset 处找到了内核"
+
+    scripts/set_kernel_offset_files $dec_offset
+    exit $?
+
+  else
+    echo "错误：未在 boot.img 找到内核的偏移位置（页面大小）！"
+    exit 1
+  fi
+
+else
+  echo "未在工作目录下找到 boot.img！"
+  cd $base_dir
+  exit 1
+fi
+

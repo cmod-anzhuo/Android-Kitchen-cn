@@ -1,0 +1,364 @@
+############################################################################
+#
+# Copyright (c) 2010-2011 dsixda - dislam@rocketmail.com
+#
+# Android Kitchen is 100% free.  This script file is intended for personal
+# and/or educational use only.  It may not be duplicated for monetary
+# benefit or any other purpose without the permission of the developer.
+#
+############################################################################
+
+
+cd WORKING_*
+
+
+if [ ! -d system ]
+then
+  echo "警告: system文件夹没有找到,无法继续!"
+  echo
+  cd ..
+  exit 0
+
+elif [ ! -e META-INF/com/google/android/update-script ] && [ ! -e META-INF/com/google/android/updater-script ]
+then
+  echo "警告：未找到 update-script/updater-script"
+  echo
+  cd ..
+  exit 0
+
+elif [ -e META-INF/com/google/android/updater-script ]
+then
+
+  cd ..
+  scripts/check_which_update_binary
+  exit 0
+
+elif [ -e META-INF/com/google/android/update-binary ]
+then
+
+  echo
+  echo "警告：检测到了 update-script 和 update-binary，"
+  echo "      正在重命名 update-binary 为 update-binary.orig。"
+  echo
+
+  cd META-INF/com/google/android
+  rm -f update-binary.orig
+  mv -f update-binary update-binary.orig
+  cd ../../../..
+
+fi
+
+
+
+########### update-script enhancements follow ###########
+
+
+#
+# Hack for duplicate filenames with different case
+#
+# - liba2dp.so will be moved to a folder above /system.  The folder contents 
+#   will be copied to system/lib during update-script execution
+# - libA2DP.so will be copied to a new folder under /system.  The file's symbolic
+#   link will go under system/lib with UPPER CASE letters during update-script
+#   execution.
+#
+if [ `uname | grep CYGWIN` ]
+then
+
+  cd system
+
+  #
+  # Check for Android 1.x and Sense ROM (e.g. All Sense ROMs have the HTC Add Program widget)
+  #
+  if [ "`grep -c ro.build.version.release=1 build.prop`" == "1" ] && [ -e app/HtcAddProgramWidget.apk ]
+  then
+
+    if [ -d liba2dp_upper ] && [ -d ../liba2dp_lower ]
+    then
+      echo "已找到为Cygwin所做的liba2dp.so重名修改，不需要再做一次"
+      echo
+    else
+
+      if [ -e lib/liba2dp.so ]
+      then
+
+        echo 
+        echo "为Cygwin执行 liba2dp.so 重名修改"
+
+        if [ -d liba2dp_upper ]
+        then
+          # Nandroid backup may have it already
+          echo "文件夹 system/liba2dp_upper 已存在"
+
+        else
+          mkdir liba2dp_upper
+          cp ../../tools/liba2dp_upper.so liba2dp_upper/
+        fi
+
+        # Make a new folder but not under system (contents will be copied later under system/lib)
+        mkdir -p ../liba2dp_lower/lib
+        mv lib/liba2dp.so ../liba2dp_lower/lib/liba2dp.so
+ 
+        # Nandroid backup may have symbolic link still there
+        if [ -e lib/libA2DP.so ]
+        then
+          rm lib/libA2DP.so
+        fi
+
+        sed -i -e 's/copy_dir PACKAGE:system SYSTEM:/copy_dir PACKAGE:system SYSTEM:\n\n# liba2dp.so duplicate filename hack for Cygwin\ncopy_dir PACKAGE:liba2dp_lower SYSTEM:\nsymlink SYSTEM:liba2dp_upper\/liba2dp_upper.so SYSTEM:lib\/libA2DP.so/g' ../META-INF/com/google/android/update-script
+        
+        echo
+  
+      fi
+    fi
+  fi
+
+  cd ..
+
+fi
+
+
+
+#
+# Check for radio.img in working folder, and then modify the update-script if required
+#
+if [ -e radio.img ]
+then
+  
+  if [ ! -d system/app ]
+  then
+    echo "警告: 找到radio.img但是没有发现system/app. 无法修改update-script."
+
+  #
+  # Add radio to HTC device
+  #
+  elif [ `ls system/app | grep -c -i htc` -gt 0 ]
+  then
+    if [ "`grep -c write_radio_image META-INF/com/google/android/update-script`" == "0" ] 
+    then
+      echo "已发现 radio.img ."
+      echo "修改 update-script 添加刷写 radio 的语句 ..."
+      echo "write_radio_image PACKAGE:radio.img" >> META-INF/com/google/android/update-script
+      echo
+    fi
+
+  #
+  # Add radio to non-HTC device
+  #
+  else
+    if [ "`grep -c \"write_raw_image PACKAGE:radio.img\" META-INF/com/google/android/update-script`" == "0" ] 
+    then
+      echo "已发现 radio.img ."
+      echo "修改 update-script 添加刷写 radio 的语句 ..."
+      echo "write_raw_image PACKAGE:radio.img" >> META-INF/com/google/android/update-script
+      echo
+    fi
+  fi
+
+else
+  if [ "`grep -c write_radio_image META-INF/com/google/android/update-script`" == "1" ] || \
+      [ "`grep -c \"write_raw_image PACKAGE:radio.img\" META-INF/com/google/android/update-script`" == "1" ] 
+  then
+    echo "未在ROM中找到 radio.img。"
+    echo "修改update-script 移除刷写 radio 的语句 ..."
+    sed -i -e 's/write_radio_image PACKAGE:radio.img[ ]*$//g' META-INF/com/google/android/update-script
+    sed -i -e 's/write_raw_image PACKAGE:radio.img[ ]*$//g' META-INF/com/google/android/update-script    
+  fi
+fi
+
+#
+# Check for hboot.img in working folder, and then modify the update-script if required
+#
+if [ -e hboot.img ]
+then
+  if [ "`grep -c write_hboot_image META-INF/com/google/android/update-script`" == "0" ] 
+  then
+    echo "未找到 hboot.img"
+    echo "正在修改 update-script 添加刷写 HBOOT 的语句 ..."
+    echo "write_hboot_image PACKAGE:hboot.img" >> META-INF/com/google/android/update-script
+    echo
+  fi
+
+else
+  if [ "`grep -c write_hboot_image META-INF/com/google/android/update-script`" == "1" ] 
+  then
+    echo "ROM 中不存在 hboot.img。"
+    echo "正在修改 update-script 以移除刷写 HBOOT 的语句..."
+    sed -i -e 's/write_hboot_image PACKAGE:hboot.img[ ]*$//g' META-INF/com/google/android/update-script
+  fi
+fi
+
+
+
+
+#
+# Fix entries in update-script for boot partition
+#
+
+if [ -e boot.img ]
+then
+  cd ..
+  cmd_line=`scripts/get_cmdline`
+  cd WORKING_*
+elif [ -e boot/initrd.gz ] && [ -e boot/zImage ]
+then
+  cmd_line="dsixda NAND"
+fi
+
+if [ "$cmd_line" == "dsixda NAND" ]
+then
+  if [ "`grep -c "write_raw_image .*:boot.img [ ]*BOOT:" META-INF/com/google/android/update-script`" != "0" ] 
+  then
+    echo "正在替换 update-script 中对 NAND ROM boot 文件夹操作的命令的行 ..."
+    sed -i -e 's/write_raw_image .*:boot.img [ ]*BOOT:/copy_dir PACKAGE:boot BOOT:/g' META-INF/com/google/android/update-script
+
+  elif [ "`grep -c "copy_dir PACKAGE:boot BOOT:" META-INF/com/google/android/update-script`" == "0" ] 
+  then
+    echo "正在为 NAND ROM 的 boot 文件夹于 update-script 添加相应的行 ..."
+    echo "copy_dir PACKAGE:boot BOOT:" >> META-INF/com/google/android/update-script
+  fi    
+
+else
+
+  if [ -e boot.img ] && [ "$cmd_line" != "dsixda Null" ]
+  then
+    if [ "`grep -c "write_raw_image .*:boot.img [ ]*BOOT:" META-INF/com/google/android/update-script`" == "0" ] 
+    then
+      echo "已发现 boot.img。"
+      echo "修改 update-script 添加刷写 boot.img 的语句..."
+      echo "write_raw_image PACKAGE:boot.img BOOT:" >> META-INF/com/google/android/update-script
+      echo
+    fi
+
+  elif [ "`grep -c " BOOT:" META-INF/com/google/android/update-script`" != "0" ] 
+  then
+    echo "未在 ROM 中找到 boot.img。"
+    echo "修改 update-script 移除刷写 boot.img 的语句..."
+    sed -i -e '/ BOOT:[ ]*$/d' META-INF/com/google/android/update-script
+  fi
+
+  if [ "`grep -c "copy_dir PACKAGE:boot BOOT:" META-INF/com/google/android/update-script`" != "0" ] && [ ! -d boot ]
+  then
+    echo "移除update-script中 /boot 文件夹条目 ..."
+    sed -i -e '/copy_dir PACKAGE:boot BOOT:/d' META-INF/com/google/android/update-script
+  fi   
+fi
+
+
+
+#
+# Check for /system/bin/reboot in working folder, and then modify the update-script if required.
+# In some ROMs, 'reboot' may not be a symbolic link, so the kitchen did not delete it.
+#
+echo
+if [ -e system/bin/reboot ]
+then
+
+  if [ "`grep -c "symlink toolbox SYSTEM:bin/reboot" META-INF/com/google/android/update-script`" == "1" ] 
+  then
+    echo "已发现 /system/bin/reboot."
+    echo "正在修改 update-script 移除不需要的符号链接 ..."
+    sed -i -e '/symlink toolbox SYSTEM:bin\/reboot$/d' META-INF/com/google/android/update-script
+    echo
+  fi
+
+else
+
+  if [ "`grep -c "symlink toolbox SYSTEM:bin/reboot" META-INF/com/google/android/update-script`" == "0" ] && [ -e system/bin/toolbox ]
+  then
+    echo "未发现 /system/bin/reboot."  
+    echo "修改 update-script 创建符号链接 ..."
+    sed -i -e 's/symlink toolbox SYSTEM:bin\/ps$/symlink toolbox SYSTEM:bin\/ps\nsymlink toolbox SYSTEM:bin\/reboot/g' META-INF/com/google/android/update-script
+ 
+    if [ "`grep -c "symlink toolbox SYSTEM:bin/reboot" META-INF/com/google/android/update-script`" == "0" ] 
+    then
+      sed -i -e 's/copy_dir PACKAGE:system SYSTEM:$/copy_dir PACKAGE:system SYSTEM:\nsymlink toolbox SYSTEM:bin\/reboot/g' META-INF/com/google/android/update-script
+    fi
+
+    echo
+  fi
+fi
+
+
+
+#
+# Fix the apps2sd issue where update-script wants to remove /data/app but it returns an error
+#
+
+grep_cmd=`grep -c "delete DATA:app[ ]*$" META-INF/com/google/android/update-script`
+
+if [ "$grep_cmd" != "0" ]
+then
+
+  cd META-INF/com/google/android
+  echo
+  echo "替换脚本 update-script 中的 'delete DATA:app'，"
+  echo "从而确保 /data/app 的存在 ..."
+  sed -i -e '/delete DATA:app[ ]*$/d' update-script
+
+  if [ "`grep -c check_data_app update-script`" == "0" ]
+  then
+    sed -i -e 's/copy_dir PACKAGE:data DATA:/run_program PACKAGE:check_data_app\ncopy_dir PACKAGE:data DATA:/g' update-script
+  fi
+
+  cd ../../../..
+
+  if [ ! -e check_data_app ]
+  then
+    echo "正在添加 check_data_app 到工作目录"
+    cp ../tools/check_data_app .
+  else
+    echo "check_data_app 已存在"
+  fi
+fi
+
+
+
+#
+# Add permissions for init.d if run-parts enabled
+#
+
+if [ -e boot.img ] 
+then
+
+  echo "正在检查 boot.img ..."
+
+  cd ..
+  scripts/ensure_boot_extracted no_clear
+  if [ -d BOOT-EXTRACTED ]
+  then
+    
+    if [ ! -e BOOT-EXTRACTED/boot.img-ramdisk/init.rc ]
+    then
+      echo "警告：未在 boot.img 中找到 init.rc"
+
+    elif [ `grep -c run-parts BOOT-EXTRACTED/boot.img-ramdisk/init.rc` ]
+    then
+      scripts/add_initd_perm_to_update_script
+    fi
+
+    rm -rf BOOT-EXTRACTED
+  fi
+else
+  cd ..
+fi
+
+scripts/fix_update_script_blanks
+cd WORKING_*
+
+#
+# Remove update-script backup file created by perl file operations in Cygwin
+#
+if [ -e META-INF/com/google/android/update-script.bak ]
+then
+  echo
+  echo "正在删除 update-script.bak"
+  rm META-INF/com/google/android/update-script.bak
+fi
+
+echo
+
+
+cd ..
+
+

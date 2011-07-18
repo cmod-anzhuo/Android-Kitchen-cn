@@ -1,0 +1,105 @@
+############################################################################
+#
+# Copyright (c) 2010-2011 dsixda - dislam@rocketmail.com
+#
+# Android Kitchen is 100% free.  This script file is intended for personal
+# and/or educational use only.  It may not be duplicated for monetary
+# benefit or any other purpose without the permission of the developer.
+#
+############################################################################
+
+
+clear
+echo
+echo "-----------------------------------------------------------------"
+echo 
+echo "此选项将会禁用Android设备开机时播放的‘如同噪音’的开机"
+echo "音。你的设备有可能并不支持此选项。"
+echo
+echo "-----------------------------------------------------------------"
+echo
+
+echo -n "继续禁用开机音(y/n)？(默认为：y)："
+read do_disable
+
+if [ "$do_disable" == "n" ]
+then
+  exit 0
+fi
+
+echo
+
+if [ -d WORKING_* ]
+then
+  echo "已找到工作目录"
+else
+  echo "未找到工作目录，你需要先创建一个！"
+  exit 0
+fi
+
+if [ -d WORKING_* ]
+then
+  cd WORKING_*
+else
+  exit 0
+fi
+
+if [ -e system/media/bootscreen/boot_animation.xml ]
+then
+  cd system/media/bootscreen/
+
+  echo
+  echo "目前在 boot_animation.xml 中是："
+  grep useAudio boot_animation.xml
+  echo
+
+  if [ "`grep useAudio='"1"' boot_animation.xml`" == "" ]
+  then
+    echo "开机音已被关闭，无需进行修改"
+  else
+    echo "正在修改 boot_animation.xml ..."
+    perl -pi -e 's/useAudio="1"/useAudio="0"/g' boot_animation.xml
+
+    echo
+    echo "现在是："
+    grep useAudio boot_animation.xml
+  fi
+
+  if [ -e boot_animation.xml.bak ]
+  then
+    echo
+    echo "正在移除 boot_animation.xml.bak"  
+    rm boot_animation.xml.bak
+  fi
+
+
+  cd ../../../..
+
+
+else
+
+  echo
+  echo "未在此ROM中找到 /system/media/bootscreen/boot_animation.xml"
+
+  file_list="system/customize/resource/android_audio.mp3 system/media/android_audio.mp3 system/sounds/lgeSounds/PowerOn.mp3"
+
+  for mp3 in $file_list 
+  do
+
+    echo
+
+    if [ -e $mp3 ]
+    then
+      echo "--> 正在重命名 /$mp3"
+      mv $mp3 $mp3.bak
+    else
+      echo "未在此ROM中找到 /$mp3"
+    fi
+  
+  done
+
+  cd ..
+fi
+
+echo
+

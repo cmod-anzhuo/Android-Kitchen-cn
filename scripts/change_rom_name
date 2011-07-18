@@ -1,0 +1,93 @@
+############################################################################
+#
+# Copyright (c) 2010-2011 dsixda - dislam@rocketmail.com
+#
+# Android Kitchen is 100% free.  This script file is intended for personal
+# and/or educational use only.  It may not be duplicated for monetary
+# benefit or any other purpose without the permission of the developer.
+#
+############################################################################
+
+clear
+
+if [ -d WORKING_* ]
+then
+  echo "已找到工作目录"
+else
+  echo "未找到工作目录！"
+  exit 0
+fi
+
+clear
+cd WORKING_*
+
+if [ ! -e system/build.prop ]
+then
+  echo "错误:无法找到 build.prop"
+  cd ..
+  exit 0
+fi
+
+cd system
+
+echo
+
+if [ `grep -c ro.product.version build.prop` == 0 ]
+then
+  id_var=ro.build.display.id
+else
+  id_var=ro.product.version
+fi
+
+
+cd ../..
+current_name=`scripts/get_build_prop_val $id_var`
+
+if [ "$current_name" == "UNKNOWN" ]
+then
+
+  echo "错误:无法在build.prop中找到$id_var"
+  cd ../..
+  exit 0
+fi
+
+
+echo
+echo "当前ROM的名字为："
+echo
+echo "$current_name"
+echo
+echo
+echo -n "你想重命名吗 (y/n)? (默认: y): "
+
+read do_rename
+echo
+
+if [ "$do_rename" == "n" ]
+then
+  echo "Ok, 什么都没有改变"
+
+else 
+
+  echo -n "请输入新名字: "
+  read new_name
+
+  scripts/set_build_prop_val $id_var "$new_name"
+  current_name=`scripts/get_build_prop_val $id_var`
+
+  echo
+  echo
+  echo "在 build.prop中，$id_var 现在已设置为："
+  echo
+  echo "$current_name"
+
+  if [ "$current_name" != "$new_name" ]
+  then
+    echo
+    echo "警告: 名字不符合于说明规定"
+  fi
+
+fi
+
+echo
+

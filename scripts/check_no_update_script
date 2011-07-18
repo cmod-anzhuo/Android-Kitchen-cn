@@ -1,0 +1,88 @@
+############################################################################
+#
+# Copyright (c) 2010-2011 dsixda - dislam@rocketmail.com
+#
+# Android Kitchen is 100% free.  This script file is intended for personal
+# and/or educational use only.  It may not be duplicated for monetary
+# benefit or any other purpose without the permission of the developer.
+#
+############################################################################
+
+ 
+temp=`ls WORKING_* 2>/dev/null`
+res=$?
+
+if [ "$res" == "2" ]
+then
+  echo "没有找到工作目录!"
+  exit 0
+else
+  cd WORKING_*
+fi
+
+if [ ! -d META-INF/com/google/android ]
+then
+  echo "没有找到META-INF/com/google/android目录,创建."
+  mkdir -p META-INF/com/google/android
+  echo
+fi
+
+cd META-INF/com/google/android
+
+
+if [ -e update-script ]
+then
+  echo "找到update-script"
+  cd ../../../../.. 
+
+else  
+
+  if [ -e updater-script ]
+  then
+
+    cd ../../../../..
+
+    echo
+    echo "======================================================="
+    echo
+    echo "发现一个updater-script而没有update-script.出于厨房脚本兼容性考虑"
+    echo "仅update-scripts在厨房使用."
+    echo
+    echo "选择一个选项号码:"
+    echo 
+    echo "  1 = 转换到update-script (推荐)"
+    echo "  2 = 什么都不做,保持updater-script"
+    echo
+    echo "- 操作 #1 将会把一个 updater-script(Edify) 转换为 update"
+    echo "  -script(Amend)。在你打包ROM的时候它将被改回Edify格式。"
+    echo
+    echo "- 操作 #2 应该仅在你只想使用厨房的打包功能时或者转换"
+    echo "  update-script之后选用。"
+    echo
+    echo -n "? (默认=1) "
+
+    read enter_option
+    if [ "$enter_option" != "2" ]
+    then
+      scripts/convert_updater_script no_help
+      scripts/fix_update_script
+    else
+      echo
+      echo "警告: 厨房没有update-script可能出现问题"
+      exit 1
+    fi
+
+  else
+
+    cd ../../../../..
+
+    echo "没有发现一个update-script, 创建一个"
+    cd WORKING_*
+    cp ../tools/update_files/update-script META-INF/com/google/android/
+    cd ..
+    scripts/fix_update_script
+    scripts/fix_update_script_with_features
+
+  fi
+fi
+

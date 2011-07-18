@@ -1,0 +1,463 @@
+############################################################################
+#
+# Copyright (c) 2010-2011 dsixda - dislam@rocketmail.com
+#
+# Android Kitchen is 100% free.  This script file is intended for personal
+# and/or educational use only.  It may not be duplicated for monetary
+# benefit or any other purpose without the permission of the developer.
+#
+############################################################################
+
+
+clear
+echo
+
+if [ -d WORKING_* ]
+then
+  echo "已找到工作目录："
+else
+  echo "未找到工作目录！"
+  exit 0
+fi
+
+cd WORKING_*
+
+if [ -e META-INF/com/google/android/update-script ] && [ -e META-INF/com/google/android/updater-script ]
+then
+
+  echo
+  echo "错误：在工作文件夹中检测到 update-script 和 updater-script 均存在。" 
+  echo "      请在打包前删除其中的某一个！" 
+  echo
+
+  cd ..
+  exit 0
+fi
+
+
+
+echo
+echo "正在清理所有遗留文件 ..."
+echo
+
+rm -f *.zip
+rm -f testkey.*
+rm -f signapk.jar
+rm -f signed*.zip
+
+
+#
+# Clean up *.DS_Store hidden files
+#
+find . -name '*.DS_Store' -type f -delete
+
+#
+# Clean up stackdump files
+#
+find . -name sh.exe.stackdump -type f -delete
+
+
+#
+# Clean up temp files left behind by interrupted Amend/Edify conversion scripts
+#
+find META-INF/com/google/android/ -name 'sed*' -type f -delete
+
+
+#
+# Clean up strange temp file issue in root of working folder
+#
+
+file_list=`find . -maxdepth 1 -type f`
+
+for filename in $file_list
+do
+
+  filename=`echo $filename | sed 's/\.\///g'`
+  header_bytes=`od -A n -H -j 0 -N 4 $filename | sed 's/ //g'`
+
+  if [ "$header_bytes" == "04034b50" ]
+  then
+    echo -n "已在目录下找到文件: $filename. 删除 (y/n)? (默认为: y): "
+    read delete_file
+
+    if [ "$delete_file" != "n" ]
+    then
+      echo "正在删除 $filename"
+      rm -f $filename
+    else
+      echo "保留 $filename"
+    fi
+  fi
+done
+
+
+cd ..
+scripts/prompt_nand_type
+cd WORKING_*
+
+
+echo
+echo `pwd`
+echo
+ls -lrt
+cd ..
+echo
+
+
+scripts/fix_pre_build
+cmd_line=`scripts/get_cmdline`
+
+extreme=no
+express=no
+interactive=no
+
+echo
+echo "=========================================================================="
+echo
+echo "选择打包选项："
+echo
+echo "  1 = 交互模式 - 适合大部分用户"
+echo "      (通过指导完成ROM构建)"
+echo
+echo "  2 = 快速模式 - 仅限高级用户使用!"
+echo "      (自动执行 zipalign 优化, Edify, 不为ROM签名, 自动命名ZIP文件)"
+echo 
+echo "  3 = 极端模式 - 仅限高级用户使用！"
+echo "      (不执行 zipalign 优化, 没有脚本转换, 不为ROM签名, 自动命名ZIP文件)"
+echo 
+echo "  4 = 取消 - 现在不打包"
+echo
+echo "=========================================================================="
+echo
+echo -n "Number (default: 1): "
+
+read build_mode
+
+# Default is 1, so remember to account for Enter key
+if [ "$build_mode" == "4" ]
+then
+  echo "取消"
+  exit 0
+elif [ "$build_mode" == "3" ]
+then
+  extreme=yes  
+elif [ "$build_mode" == "2" ]
+then
+  express=yes 
+else
+  interactive=yes
+fi
+
+
+if [ "$extreme" == "no" ]
+then
+  scripts/do_zipalign for_build $express
+fi
+
+if [ "$?" == "1" ]
+then
+  echo "取消构建"
+  exit 0
+fi
+
+cd WORKING_*
+
+#
+# Create update.zip
+#
+echo
+echo "正在创建 update.zip ..."
+
+if [ "$cmd_line" == "dsixda Null" ]
+then
+  zip -r -y -q update * -x *.cvs* *.git* *.svn* \
+      *updater-script.orig* *update-binary.orig* *update-script.orig* \
+      boot.img *system.img*
+else
+  zip -r -y -q update * -x *.cvs* *.git* *.svn* \
+      *updater-script.orig* *update-binary.orig* *update-script.orig* \
+      *system.img*
+fi      
+
+echo
+
+if [ -e update.zip ]
+then
+  echo "已创建 update.zip"
+  echo
+else
+  echo "错误: 无法创建 update.zip!"
+  cd ..
+  exit 0
+fi
+
+
+#
+# Convert update-script (Amend) to updater-script (Edify) in the ZIP file only
+#
+
+if [ "$extreme" == "no" ] && [ -e META-INF/com/google/android/update-script ]
+then
+ 
+  cd ..
+  scripts/update_script_should_convert_back
+  auto_convert="$?"
+  cd WORKING_*
+  
+  if [ "$auto_convert" == "1" ] || [ "$express" == "yes" ]
+  then 
+    convert_it=y
+  else
+    echo
+    echo "========================================================================"
+    echo 
+    echo " 在 ROM 中检测到 update-script"
+    echo
+    echo " 为确保最新自定义 recovery 镜像的兼容性，你可以选择在你的 ROM 中使用"
+    echo " updater-script (Edify) 而不是 update-script (Amend)。"
+    echo 
+    echo " 你的工作目录将会保持原样并继续带有原始的 update-script."
+    echo 
+    echo -n " 在 ROM 中添加 updater-script(y/n)？(默认为：n)："
+    read convert_it
+  fi
+
+  if [ "$convert_it" == "y" ]
+  then
+
+    cd ..
+    scripts/convert_update_script for_zip $express
+
+    if [ "$?" != "1" ]
+    then
+
+      cd WORKING_*
+
+      if [ "$express" == "yes" ]
+      then
+        proceed_change=y
+      else
+        echo "保留更改并继续(y/n)?"
+        echo 
+        echo "  y = 继续；将会移动 updater-script 和 update-binary 到 ZIP 文件"
+        echo "      中；ZIP 文件中的 update-script 将会依然保留在工作目录中。"
+        echo "  n = 取消；updater-script 和 update-binary 将会被删除并不使用。"
+
+        echo
+         
+        echo -n "? (默认为: y): "
+        read proceed_change 
+      fi
+
+      echo
+
+      if [ "$proceed_change" != "n" ]
+      then
+
+        if [ -e META-INF/com/google/android/updater-script ]
+        then
+          zip update.zip META-INF/com/google/android/updater-script META-INF/com/google/android/update-binary
+          zip -d update.zip META-INF/com/google/android/update-script
+        else
+          echo "未找到 updater-script，保留 update-script"
+        fi
+
+      else
+        echo
+        echo "正在取消"
+      fi
+
+      rm -f META-INF/com/google/android/updater-script
+      rm -f META-INF/com/google/android/update-binary
+
+      if [ "$auto_convert" == "1" ] && [ "$proceed_change" == "n" ]
+      then
+        echo "你的 ROM 不适合使用此 update-script。"
+        echo "正在删除 update.zip ..."
+        rm -f update.zip
+        echo
+        cd ..
+        exit 0
+      fi
+
+    else
+      echo "保留 update-script"
+      cd WORKING_*
+    fi
+
+  else
+    echo
+    echo
+    echo "保留 update-script"
+  fi
+
+  echo
+
+else
+
+  #
+  # For Extreme mode
+  #
+
+  if [ -e META-INF/com/google/android/update-script ]
+  then
+    echo "找到update-script (Amend) "
+  fi
+  
+  if [ -e META-INF/com/google/android/updater-script ]
+  then
+    echo "找到updater-script (Edify)"
+  fi
+
+  echo
+fi
+
+
+
+#
+# Sign update.zip if necessary
+#
+
+date_str=`date '+%m%d%y_%H%M%S'`
+
+cd ..
+device=`scripts/get_device_name | sed 's/ /_/g'`
+cd WORKING_*
+
+
+sign_update=no
+sign_str=unsigned
+
+if [ "$interactive" == "yes" ]
+then
+  echo
+  echo "建议你签名."
+  echo -n "签名 (y/n)? (默认: y): "
+  read do_sign
+
+  if [ "$do_sign" != "n" ]
+  then
+    sign_update=yes
+    sign_str=signed
+  fi
+fi
+
+final_file=$device\_$sign_str\_$date_str.zip
+
+
+if [ "$sign_update" == "no" ]
+then
+  mv update.zip $final_file
+  res=$?
+
+else
+  echo
+  echo 签名 update.zip ...
+
+  cp ../tools/signapk_files/testkey.* .
+  cp ../tools/signapk_files/signapk.jar .
+
+  java -jar signapk.jar testkey.x509.pem testkey.pk8 update.zip $final_file
+  res=$?
+
+  rm -f testkey.*
+  rm -f signapk.jar
+  rm -f update.zip
+fi
+
+
+if [ -e $final_file ] && [ "$res" == "0" ]
+then
+
+  #
+  # Rename zip
+  #
+  if [ "$interactive" == "yes" ]
+  then
+    cd ..
+    final_file2=`scripts/set_update_name $final_file`
+    cd WORKING_*
+    if [ "$final_file2" != "$final_file" ]
+    then
+      mv -fv $final_file $final_file2
+      final_file=$final_file2
+    fi
+  fi
+
+  echo
+
+  #
+  # Make output folder
+  #
+  if [ -d ../OUTPUT_ZIP ]
+  then
+    echo "已找到 OUTPUT_ZIP 文件夹" 
+  else
+    echo "正在创建文件夹 OUTPUT_ZIP ..."
+    mkdir ../OUTPUT_ZIP
+  fi
+
+  mv $final_file ../OUTPUT_ZIP/
+
+  echo
+  echo
+  echo
+  echo "=========================================================================="
+  echo
+  echo "恭喜你，你的ROM位于此位置："
+  echo
+  echo "----> OUTPUT_ZIP/$final_file" 
+  echo
+  echo
+  echo "复制ROM到你的储存卡中，然后进入recovery将其刷入手机。"
+  echo
+  
+  echo "如果需要的话，记的先执行wipe操作！"
+  echo
+  echo "如果你的ROM不能启动,请参阅FAQ中的故障诊断."
+
+  if [ "$sign_update" == "no" ]
+  then
+    echo
+    echo "请注意: 你必须在刷这个rom前先禁用recovery菜单中的签名检查!"
+    echo "如果你希望迟点签名这个ROM，请使用厨房高级菜单中的签名ZIP选项"
+  fi
+
+  echo
+
+else 
+
+  echo
+  echo "无法创建 $signed_file!"
+  echo
+
+  if [ "$sign_update" == "yes" ]
+  then
+    if [ `uname | grep Linux` ] 
+    then
+      echo "请确定你已安装了最新版本的 Sun Java JDK"
+    
+    elif [ `uname | grep CYGWIN` ]
+    then
+      echo "请确定你的电脑上已经安装了 Sun Java JDK。" 
+      echo
+      echo "如果你已经安装好了 JDK，请确定你已经在环境变量中正确的添加"
+      echo "了 java.exe："
+      echo 
+      echo "例如 在 $HOME/.bash_profile 文件中，在最后面添加："
+      echo "      PATH=/cygdrive/c/Program\ Files/Java/jdk1.6.0_18/bin:\${PATH}" 
+      echo 
+      echo "      你的实际环境变量可能会有些不同。"
+
+    elif [ `sw_vers | grep -o Mac` ]
+    then
+      echo "对于 Mac OS X，你可能需要安装 SoyLatte(替代 Java JDK)"
+    fi
+  fi
+fi
+
+cd ..
+
+# System beep
+echo 
+

@@ -1,0 +1,75 @@
+############################################################################
+#
+# Copyright (c) 2010-2011 dsixda - dislam@rocketmail.com
+#
+# Android Kitchen is 100% free.  This script file is intended for personal
+# and/or educational use only.  It may not be duplicated for monetary
+# benefit or any other purpose without the permission of the developer.
+#
+############################################################################
+
+clear
+
+date_str=`date '+%m%d%y_%H%M%S'`
+boot_dir=bootimg_$date_str
+
+echo
+echo "正在创建文件夹 `pwd`/$boot_dir ..."
+mkdir $boot_dir
+
+echo
+echo "---> 请将 boot.img 文件放到上述文件夹中。<---"
+
+scripts/press_enter
+
+cd $boot_dir
+
+if [ -e boot.img ]
+then
+
+  cd ..
+  scripts/check_bootimg_header $boot_dir
+  scripts/check_kernel_offset $boot_dir
+  res=$?
+
+  if [ "$res" == "0" ]
+  then
+    kernel_file=extract-kernel.pl
+    ramdisk_file=extract-ramdisk.pl
+  else
+    rm -rf $boot_dir
+    exit 0
+  fi
+
+  cd $boot_dir
+  cp ../tools/extract_boot_files/$kernel_file extract-kernel.pl
+  cp ../tools/extract_boot_files/$ramdisk_file extract-ramdisk.pl
+
+  echo
+  echo "正在解压内核 ..."
+  ./extract-kernel.pl boot.img 2>/dev/null
+
+  echo "正在解压 ramdisk ..."
+  ./extract-ramdisk.pl boot.img 2>/dev/null
+
+  rm boot.img
+  rm extract-*.pl
+  cd ..
+  echo
+  echo "完成！"
+  echo
+  echo "$boot_dir 中的内容:"
+  echo
+  echo "`ls -l $boot_dir`"
+
+
+else
+  echo "错误：未找到 boot.img！"
+  echo
+  cd ..
+  echo "正在移除 $boot_dir 文件夹"
+  rm -rf $boot_dir
+  exit 0
+fi      
+  
+

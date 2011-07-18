@@ -1,0 +1,14 @@
+
+echo
+echo "如需创建自己的插件脚本："
+echo
+echo "  - 并不需要是一个标准的 shell 脚本。请查看'scripts'文"
+echo "    件夹下的插件脚本例子。"
+echo
+echo "  - 你的插件脚本文件名必须以'.plugin'作为结尾。"
+echo "    同时请确定文件名中没有任何的空格。 "
+echo
+echo "    例如 *****.plugin"
+echo
+echo "  - 请复制你的插件脚本到此文件夹中：/scripts/plugins"
+echo 

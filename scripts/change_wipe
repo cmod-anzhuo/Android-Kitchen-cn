@@ -1,0 +1,101 @@
+############################################################################
+#
+# Copyright (c) 2010-2011 dsixda - dislam@rocketmail.com
+#
+# Android Kitchen is 100% free.  This script file is intended for personal
+# and/or educational use only.  It may not be duplicated for monetary
+# benefit or any other purpose without the permission of the developer.
+#
+############################################################################
+
+clear
+
+if [ -d WORKING_* ]
+then
+  echo "已找到工作目录"
+else
+  echo "未找到工作目录！"
+  exit 0
+fi
+
+clear
+cd WORKING_*
+cd META-INF/com/google/android
+
+echo
+
+if [ -e update-script ]
+then
+
+  grep_wipe=`grep -c "format .*DATA:" update-script`
+  
+  if [ "$grep_wipe" == "0" ]
+  then
+
+    echo "当前ROM不会在刷机时自动清空设备的数据"
+    echo -n "你是否想要更改为自动清空(y/n)？(默认为：n)："
+
+    read do_wipe
+    echo
+
+    if [ "$do_wipe" == "y" ]
+    then
+
+      if [ `grep -c "delete DATA" update-script` != 0 ]
+      then
+        #
+        # Check if non-standard line required, e.g. format yaffs2 DATA:
+        #
+        fmt_line=`grep -om 1 "format .*SYSTEM:" update-script | sed -e 's/SYSTEM/DATA/g'`
+
+        #
+        # Change only the first occurrence
+        #
+        sed -i -e '0,/delete DATA/s/delete DATA/'"$fmt_line"'\ndelete DATA/' update-script
+      else
+        sed -i -e 's/format\(.*\)SYSTEM:[ ]*[\n]*/format\1SYSTEM:\nformat\1DATA:\n/' update-script
+      fi
+
+      grep_wipe=`grep -c "format .*DATA:" update-script`
+      if [ "$grep_wipe" == "1" ]
+      then
+        echo "搞定，ROM现在会自动清空设备的数据"
+      else
+        echo "错误：无法修改 update-script"
+      fi
+    else
+      echo "好的，什么都不会被修改"
+    fi
+    
+
+  else
+    echo "当前ROM会在刷机时自动清空设备的数据"
+    echo -n "你是否想要更改为不自动清空(y/n)？(默认为：n)："
+
+    read dont_wipe
+    echo
+
+    if [ "$dont_wipe" == "y" ]
+    then
+      sed -i -e 's/format .*DATA:[ ]*[\n]*//g' update-script
+      
+      grep_wipe=`grep -c "format .*DATA:" update-script`
+      if [ "$grep_wipe" == "0" ]
+      then
+        echo "搞定，ROM现在不会自动清空设备的数据"
+      else
+        echo "错误：无法修改 update-script"
+      fi
+    else
+      echo "好的，什么都不会被修改"
+    fi
+
+  fi
+
+else
+  echo "错误：未找到 update-script！"
+fi
+
+cd ../../../../..
+echo
+

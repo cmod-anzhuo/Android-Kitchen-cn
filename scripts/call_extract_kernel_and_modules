@@ -1,0 +1,109 @@
+############################################################################
+#
+# Copyright (c) 2010-2011 dsixda - dislam@rocketmail.com
+#
+# Android Kitchen is 100% free.  This script file is intended for personal
+# and/or educational use only.  It may not be duplicated for monetary
+# benefit or any other purpose without the permission of the developer.
+#
+############################################################################
+
+clear
+
+echo
+echo "此过程将会从一个供应ROM中提取出内核和模块。"
+echo 
+echo "注意1:在本过程开始前，任何已存在的 MY_KERNEL 文件夹都将被移除。"
+echo 
+echo "注意2：如果一个工作目录已存在，那么会对其进行备份然后在内核提取"
+echo "       完成后再进行恢复。"
+echo
+echo "获取此新ROM，然后准备将其放置到文件夹'original_update'中。"
+
+scripts/press_enter
+
+if [ -d WORKINGTEMP ]
+then
+  rm -rf WORKINGTEMP
+fi
+
+if [ -d WORKING_* ]
+then
+  mkdir WORKINGTEMP
+  mv WORKING_* WORKINGTEMP 2>/dev/null
+
+  if [ "$?" == "1" ]
+  then
+    echo "错误：工作目录正在使用中。请确定没有任何文件或文件夹被打开了。"
+    rm -rf WORKINGTEMP
+    exit 0
+  fi
+
+fi
+
+scripts/extract_kernel_and_modules
+
+if [ -d MY_KERNEL ]
+then
+
+  if [ -d MY_DEVICE_WORKING/system ]
+  then
+
+    if [ `ls MY_DEVICE_WORKING/system | grep -m 1 prop` ]
+    then
+
+      echo
+      echo "正在复制 *.prop ..."
+  
+      if [ ! -d MY_KERNEL/system ]
+      then
+        mkdir MY_KERNEL/system
+      fi
+
+      cp -v MY_DEVICE_WORKING/system/*.prop MY_KERNEL/system/
+    fi
+
+  fi
+
+
+  rm MY_KERNEL/boot.img
+
+  echo
+  echo "----------------------------------------------------------------------"
+  echo
+  echo "以下文件/文件夹已复制到 MY_KERNEL 文件夹中："
+  echo
+  ls MY_KERNEL
+
+  if [ -d MY_KERNEL/system ]
+  then
+    echo 
+    echo "Under the /system folder:"
+    ls MY_KERNEL/system
+  fi
+
+  echo
+  echo "----------------------------------------------------------------------"
+  echo
+  echo "你可以添加由本厨房在解压工作目录中的 boot.img 时所创建"
+  echo "的 zImage 到 BOOT-EXTRACTED 文件夹中。"
+  echo
+
+else
+  echo "错误：未解压内核"
+fi
+
+if [ -d MY_DEVICE_WORKING ]
+then
+  echo "正在移除此 ROM 的工作目录 ..."
+  rm -rf MY_DEVICE_WORKING
+fi
+
+if [ -d WORKINGTEMP ]
+then
+  working_folder=`ls WORKINGTEMP`
+  echo "正在恢复以前的工作文件夹 $working_folder ..."
+  mv WORKINGTEMP/* .
+  rmdir WORKINGTEMP
+fi
+

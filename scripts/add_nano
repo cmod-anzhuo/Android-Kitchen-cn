@@ -1,0 +1,124 @@
+############################################################################
+#
+# Copyright (c) 2010-2011 dsixda - dislam@rocketmail.com
+#
+# Android Kitchen is 100% free.  This script file is intended for personal
+# and/or educational use only.  It may not be duplicated for monetary
+# benefit or any other purpose without the permission of the developer.
+#
+############################################################################
+
+
+clear
+
+echo
+echo "----------------------------------------------------------------"
+echo  
+echo "Nano 是一个文本编辑器，你可以通过在你的电脑上使用 adb 命令"
+echo "行工具或者你的 Android 设备上的终端仿真器(例如ConnectBot)"
+echo "来运行它。如要在一个 shell 中运行它，请输入：nano"
+echo
+echo "同时包含的脚本 'sysrw' 和 'sysro' 能你让你很容易的挂载"
+echo "/system 文件夹(挂载为读写或是只读)，这样就可以达到编辑"
+echo "system分区中文件的目的。"
+echo
+echo "----------------------------------------------------------------"
+echo
+
+echo -n "继续安装(y/n)？(默认为：y)："
+read do_install
+
+if [ "$do_install" == "n" ]
+then
+  exit 0
+fi
+
+echo 
+
+scripts/ensure_boot_extracted
+
+if [ -d BOOT-EXTRACTED ]
+then
+  if [ -d WORKING_* ]
+  then
+
+    if [ -d BOOT-EXTRACTED/boot.img-ramdisk ]
+    then
+      cd BOOT-EXTRACTED/boot.img-ramdisk
+    else
+      echo "错误：未找到 BOOT-EXTRACTED/boot.img-ramdisk 文件夹！"
+      exit 0
+    fi
+
+  else
+    exit 0
+  fi
+else
+  exit 0
+fi
+
+echo
+
+if [ `grep -c TERMINFO init.rc` == 1 ]
+then
+  echo "init.rc 中已定义了 TERMINFO"
+  cd ../..
+  rm -rf BOOT-EXTRACTED
+
+else
+  echo "正在为 init.rc 设置 TERMINFO ..."
+  perl -pi -e 's/    export PATH /    export TERMINFO \/system\/etc\/terminfo\n    export PATH /g' init.rc
+
+  if [ -e init.rc.bak ]
+  then
+    rm -f init.rc.bak
+  fi
+
+  if [ "`grep TERMINFO init.rc`" == "" ]
+  then
+    echo "错误：无法更新 init.rc！"
+    cd ../..
+    rm -rf BOOT-EXTRACTED
+    exit 0
+  fi
+
+  cd ../..
+  scripts/build_boot_img
+
+  echo
+  echo "正在添加 /system/etc/terminfo ..."
+  echo
+
+  cd WORKING_*
+  mkdir -p system/etc/terminfo
+  cp ../tools/nano_files/terminfo.zip system/etc/terminfo/
+  cd system/etc/terminfo
+  unzip terminfo.zip
+  rm terminfo.zip
+  cd ../../../..
+fi
+
+
+
+cd WORKING_*
+echo
+
+nano_path=`find . -name nano`
+if [ "$nano_path" == "" ] 
+then
+  echo "正在添加 /system/bin/nano"
+  cp ../tools/nano_files/nano system/bin/
+  cp ../tools/nano_files/sysrw system/bin/
+  cp ../tools/nano_files/sysro system/bin/
+else 
+  echo "已找到 $nano_path"
+fi
+
+cd ..
+scripts/add_nano_to_update_script
+res=$?
+
+if [ "$res" != "1" ]
+then
+  scripts/add_sysrorw_to_update_script
+fi

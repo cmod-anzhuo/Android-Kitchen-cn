@@ -1,0 +1,101 @@
+############################################################################
+#
+# Copyright (c) 2010-2011 dsixda - dislam@rocketmail.com
+#
+# Android Kitchen is 100% free.  This script file is intended for personal
+# and/or educational use only.  It may not be duplicated for monetary
+# benefit or any other purpose without the permission of the developer.
+#
+############################################################################
+
+#
+# This script has one optional parameter:
+#
+# $1 = if set to 'no_clear' then it won't clear at start
+#
+
+if [ "$1" == "" ]
+then
+  clear
+fi
+
+scripts/prompt_remove_boot_extracted
+
+if [ ! -d BOOT-EXTRACTED ]
+then
+
+  if [ -d WORKING_* ]
+  then
+    echo
+    echo "已找到工作目录"
+  else
+    echo
+    echo "未找到工作目录，你需要先创建一个！"
+    exit 0
+  fi
+
+  cd WORKING_*
+
+  if [ -d system ]
+  then
+
+    if [ -e boot.img ]
+    then
+
+      cd ..
+      scripts/check_bootimg_header
+      scripts/check_kernel_offset
+      res=$?
+
+      if [ "$res" == "0" ]
+      then
+        kernel_file=extract-kernel.pl
+        ramdisk_file=extract-ramdisk.pl
+      else
+        exit 0
+      fi
+
+      echo "正在创建文件夹 'BOOT-EXTRACTED' ..."
+      cd WORKING_*
+      mkdir ../BOOT-EXTRACTED
+      cp boot.img ../BOOT-EXTRACTED/
+      
+      cd ..
+      cp tools/extract_boot_files/$kernel_file BOOT-EXTRACTED/extract-kernel.pl
+      cp tools/extract_boot_files/$ramdisk_file BOOT-EXTRACTED/extract-ramdisk.pl
+      cd BOOT-EXTRACTED
+
+      echo
+      echo "正在解压内核 ..."
+      ./extract-kernel.pl boot.img 2>/dev/null
+
+      echo "正在解压 ramdisk ..." 
+      ./extract-ramdisk.pl boot.img 2>/dev/null
+
+      rm boot.img
+      rm extract-*.pl
+      cd ..
+      echo
+
+    else
+
+      if [ -e boot/initrd.gz ] && [ -e boot/zImage ]
+      then
+        cd ..
+        scripts/ensure_nand_extracted $1
+
+      else
+        echo "错误：未找到 boot.img！"
+        echo
+        cd ..
+        exit 0
+      fi
+    fi      
+  
+  else
+    echo "错误：未在工作目录中找到 system 文件夹！"
+    cd ..
+    exit 0
+  fi
+fi
+

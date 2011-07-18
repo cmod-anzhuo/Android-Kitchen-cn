@@ -1,0 +1,205 @@
+############################################################################
+#
+# Copyright (c) 2010-2011 dsixda - dislam@rocketmail.com
+#
+# Android Kitchen is 100% free.  This script file is intended for personal
+# and/or educational use only.  It may not be duplicated for monetary
+# benefit or any other purpose without the permission of the developer.
+#
+############################################################################
+
+
+while :
+do
+
+  clear
+
+  echo
+  echo "----------------------------------------------------------------"
+  echo  
+  echo "进行 Deodex 将会将 ROM 中的 *.odex 文件转换成 classes.dex 文件"
+  echo "转换后的 classes.dex 文件可以并入到相应的 *.apk 或者 framework" 
+  echo " *.jar 文件中。"
+  echo ""
+  echo "deodex 的主要目的是改善所有软件的性能，并使得apk文件可以修改主"
+  echo "题。唯一的缺点是Deodex的ROM刷机后第一次启动速度会比较慢。"
+  echo
+  echo "Deodex的过程将会消耗好几分钟，并且不需要你在这之后签名任何文件."
+  echo
+  echo "----------------------------------------------------------------"
+  echo
+
+  if [ `ls tools/deodex_files | grep -c smali` -gt 2 ]
+  then
+    echo "错误: tools/deodex_files 有多个版本的 smali/baksmali!"
+    scripts/press_enter
+    exit 0
+  fi
+
+  if [ ! -d WORKING_* ]
+  then
+    echo "未找到工作目录！"
+    scripts/press_enter
+    exit 0
+  fi
+
+  cd WORKING_*
+
+  if [ ! -d system/app ]
+  then
+    echo "未找到 system/app 文件夹!"
+    cd ..
+    scripts/press_enter
+    exit 0
+  fi
+
+  if [ ! -d system/framework ]
+  then
+    echo "未找到 system/framework 文件夹！"
+    cd ..
+    scripts/press_enter
+    exit 0
+  fi
+
+
+  num_odex=`find . | grep -c "\.odex$"`
+
+  if [ "$num_odex" == "0" ]
+  then
+    echo "未找到 *.odex文件，不需要进行Deodex！"
+    cd ..
+    scripts/press_enter
+    exit 0
+
+  else
+
+    num_odex_fr=`find system/framework | grep -c "\.odex$"`
+    num_odex_app=`find system/app | grep -c "\.odex$"`
+
+    echo "system/framework 中共找到 $num_odex_fr 个 *.ode x文件"
+    echo "system/app 中共找到 $num_odex_app 个 *.odex文件"
+
+    if [ $num_odex_fr == 0 ] && [ $num_odex_app -gt 0 ]
+    then
+      echo
+      echo "警告: 如果你deodex了framework文件夹你必须deodex system/app文件夹"
+    fi
+
+
+    #
+    # Show menu choices
+    #
+
+    echo
+    echo "输入选择："
+    echo
+
+    if [ $num_odex_app -gt 0 ] && [ $num_odex_fr -gt 0 ]
+    then
+      echo " bb  = 备份这两个文件夹 (执行操作前先进行备份)"
+    fi
+    if [ $num_odex_fr -gt 0 ]
+    then
+      echo "  f  = Deodex /system/framework"
+    fi
+    if [ $num_odex_app -gt 0 ]
+    then
+      echo "  a  = Deodex /system/app"
+    fi
+    if [ $num_odex_app -gt 0 ] && [ $num_odex_fr -gt 0 ]
+    then
+      echo "  b  = Deodex 这两个文件夹 (推荐)"
+    fi
+    echo "  s  = Deodex 一个文件"
+    echo "  x  = 退出"
+    echo
+    echo -n "? "
+
+    read enterChoice
+
+    list1=( app )
+    list2=( framework )
+    list3=( framework app )
+
+    if [ "$enterChoice" == "a" ]
+    then
+      dir_list=app
+    elif [ "$enterChoice" == "f" ] 
+    then
+      dir_list=framework
+    elif [ "$enterChoice" == "b" ] 
+    then
+      dir_list="framework app"
+    elif [ "$enterChoice" == "s" ]
+    then
+      cd ..
+      scripts/choose_single_deodex
+      continue
+    elif [ "$enterChoice" == "bb" ]
+    then
+
+      #
+      # Backup
+      #
+
+      folder_list=( framework app )
+      date_str=`date '+%m%d%y_%H%M%S'`
+
+      for f in ${folder_list[@]}
+      do
+
+        backup_folder="old_`echo -n $f`_$date_str"
+        cd system/$f
+
+        echo
+        echo "在工作目录外创建备份文件夹 $backup_folder ..."
+        mkdir ../../../$backup_folder
+        cp  * ../../../$backup_folder/
+        echo "已完成 $f 文件夹的备份。"
+
+        cd ../..
+      done
+
+      cd ..
+      scripts/press_enter
+      continue
+
+    elif [ "$enterChoice" == "x" ]
+    then
+      cd ..
+      exit 0
+    else
+      cd ..
+      continue
+    fi
+  fi
+
+
+  cd ..
+  scripts/do_deodex_folder "$dir_list"
+
+  cd WORKING_*
+
+  num_odex_app=`find system/app | grep -c "\.odex$"`
+  num_odex_fr=`find system/framework | grep -c "\.odex$"`
+
+  echo
+  echo "system/app 下仍然还有 $num_odex_app 个 *.odex 文件"
+  echo "system/framework 下仍然还有 $num_odex_fr 个 *.odex 文件"
+
+  if [ $num_odex_fr == 0 ] && [ $num_odex_app -gt 0 ]
+  then
+    echo
+    echo "警告：如果你已经完成对 framework 文件夹中文件的 deodex 操作，你必须"
+    echo "也要对 app 文件夹中的文件执行 deodex 操作。"
+  fi
+
+  cd ..
+  scripts/press_enter
+
+  if [ $num_odex_fr == 0 ] && [ $num_odex_app == 0 ]
+  then
+    exit 0
+  fi
+
+done

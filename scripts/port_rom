@@ -1,0 +1,290 @@
+############################################################################
+#
+# Copyright (c) 2010-2011 dsixda - dislam@rocketmail.com
+#
+# Android Kitchen is 100% free.  This script file is intended for personal
+# and/or educational use only.  It may not be duplicated for monetary
+# benefit or any other purpose without the permission of the developer.
+#
+############################################################################
+
+
+scripts/extract_kernel_and_modules
+
+if [ -d MY_DEVICE_WORKING ]
+then
+  my_device=`scripts/get_build_prop_val ro.product.device MY_DEVICE_WORKING`
+  my_board=`scripts/get_build_prop_val ro.product.board MY_DEVICE_WORKING`
+  my_platform=`scripts/get_build_prop_val ro.board.platform MY_DEVICE_WORKING`
+
+  #
+  # Note: Don't delete MY_DEVICE_WORKING yet, it will be required later in this script
+  #
+fi
+
+if [ -d MY_KERNEL ] 
+then
+  echo
+  scripts/press_enter
+else
+  exit 1
+fi
+
+
+#
+# Now grab the donor ROM
+#
+
+clear
+echo
+echo "***************************************************************"
+echo 
+echo "--> 从其他设备上获取一个你想要进行移植的ROM <--"
+echo
+echo "***************************************************************"
+echo
+
+scripts/check_rom no_info
+
+if [ -d WORKING_* ]
+then
+
+  scripts/press_enter
+
+  cd WORKING_*
+
+  if [ -d system ]
+  then
+    cd ..
+    scripts/ensure_boot_extracted
+
+  else
+    cd ..
+    echo
+    echo "退出并清空文件夹 ..."
+
+    rm -rf MY_KERNEL
+    rm -rf MY_DEVICE_WORKING
+    exit 0
+  fi
+
+else
+  echo "你还没有选择ROM"
+  echo "退出并清空文件夹 ..."
+  rm -rf MY_KERNEL
+  rm -rf MY_DEVICE_WORKING
+  exit 0
+fi
+
+if [ ! -d BOOT-EXTRACTED ]
+then
+  echo "错误: BOOT-EXTRACTED 未找到"
+  exit 0
+fi
+
+
+clear
+echo
+echo "***************************************************************"
+echo 
+echo " 移植你的ROM"
+echo
+echo "***************************************************************"
+
+#
+# Replace kernel, modify ramdisk and then build new boot.img
+#
+
+echo
+echo "正在复制 MY_KERNEL/zImage 到 BOOT-EXTRACTED 文件夹"
+cp -f MY_KERNEL/zImage BOOT-EXTRACTED/
+
+
+echo
+echo "将 MY_KERNEL/boot.img 复制到新的工作目录以便能够在打包新"
+echo "的 boot.img 之前能够检测到正确的基址。"
+
+
+cd WORKING_*
+cp -f ../MY_KERNEL/boot.img .
+cd ..
+echo
+
+
+#
+# Rename *.rc files if required
+#
+
+board=`scripts/get_product_board`
+
+cd BOOT-EXTRACTED/boot.img-ramdisk
+file_list=`ls *.$board.rc 2>/dev/null`
+
+if [ "$file_list" != "" ]
+then
+  for rc_file in ${file_list[@]}
+  do
+    new_name=`echo $rc_file | sed -e 's/'"$board"'/'"$my_board"'/g'`
+
+    if [ "$rc_file" != "$new_name" ]
+    then
+      echo "重命名 ..."
+      mv -v $rc_file $new_name
+      echo
+    fi      
+  done
+fi
+
+
+#
+# Check if init.rc refers to busybox, and if the busybox binary is
+# found in the working folder
+# 
+if [ "`grep -o -m 1 busybox init.rc`" == "busybox" ]
+then
+  cd ../../WORKING_*
+  find_busybox=`find . -name busybox`
+  cd ..
+
+  if [ "$find_busybox" == "" ]
+  then
+    echo
+    echo "----------------------------------------------------------------------"
+    echo 
+    echo "警告：Ramdisk 里的 init.rc 需要使用 busybox，但是未在工作目录中发现 busybox。"
+    echo "      如果你按现在的状态打包该ROM，你可能无法启动到开机动画"
+    echo 
+    echo "          我找到了这个:"
+    echo 
+    grep busybox BOOT-EXTRACTED/boot.img-ramdisk/init.rc
+    echo 
+    echo "一些提示:"
+    echo 
+    echo "- 你可能要复制busybox到上面显示的文件夹中，你可以在'tools'文件夹下面找到这个"
+    echo "  二进制程序。"
+    echo "- 请确保你的update-script文件有下面的语句："
+    echo "  set_perm 0 0 04755 SYSTEM:xbin/busybox"
+    echo "- 你的 /system/xbin 文件夹下可能还缺少一些符号链接"
+    echo ""
+    echo -n "你是否想要脚本来帮助你修复这个(y/n)？(默认为：y)："
+    
+    read proceed_fix
+    if [ "$proceed_fix" != "n" ]
+    then
+      scripts/add_busybox
+    else
+      echo "未进行修复" 
+    fi
+
+    echo
+    echo "当你准备好打包boot.img时，请按回车以继续 ..."
+    read enterKey
+  fi
+
+else
+  cd ../..
+fi
+
+scripts/build_boot_img
+
+
+#
+# Set values in build.prop
+#
+
+if [ "$my_device" == "UNKNOWN" ]
+then
+  echo "警告: 不能修改build.prop中的 ro.product.device  (device=UNKNOWN)"
+else
+  scripts/set_build_prop_val ro.product.device $my_device
+fi
+
+if [ "$my_board" == "UNKNOWN" ]
+then
+  echo "警告: 不能修改build.prop中的ro.product.board (board=UNKNOWN)"
+else
+  scripts/set_build_prop_val ro.product.board $my_board
+fi
+
+if [ "$my_platform" == "UNKNOWN" ]
+then
+  echo "警告: 不能修改build.prop中的ro.board.platform (platform=UNKNOWN)"
+else
+  scripts/set_build_prop_val ro.board.platform $my_platform
+fi  
+
+
+
+#
+# Copy module files to donor ROM
+#
+
+if [ -d MY_KERNEL/system ]
+then
+  cd WORKING_*
+  echo 
+  echo "复制 modules/drivers ..."
+  cp -rf ../MY_KERNEL/system/* system/
+  cd ..
+fi
+
+
+#
+# We should not check or use the mount points in the original updater-script
+# when we convert the update-script back to updater-script, because they were 
+# only meant for the other device!!
+#
+
+cd WORKING_*
+
+if [ -d META-INF/com/google/android ]
+then
+
+  cd META-INF/com/google/android
+
+  if [ -e updater-script.orig ]
+  then
+    rm -f updater-script.orig
+  fi
+
+  if [ -e update-binary.orig ]
+  then
+    rm -f update-binary.orig
+  fi
+
+  #
+  # Use your device's original updater-script to assist with checking mount points later on
+  #
+  if [ -e ../../../../../MY_DEVICE_WORKING/META-INF/com/google/android/updater-script ]
+  then
+    cp ../../../../../MY_DEVICE_WORKING/META-INF/com/google/android/updater-script updater-script.orig
+  fi
+
+  cd ../../../..
+
+fi
+
+cd ..
+
+
+rm -rf MY_KERNEL
+rm -rf MY_DEVICE_WORKING
+
+
+
+echo
+echo "=============================================================="
+echo
+echo "如果一切顺利的话，你现在应该可以用厨房移植ROM，进行一些需要的调整"
+echo "在你完全准备好之后，可以构建ROM"
+echo
+echo "重要事项"
+echo "---------"
+echo "如果新的ROM出现容量大于你设备使用的大部分ROM,你必须移除工作目录下的一些应用"
+echo "以保持ROM适合你设备的内部空间大小.否则,你的设备可能无法启动."
+echo
+echo "如果你的设备刷完厨房移植构建的ROM之后无法启动,请参照厨房的FAQ找问题怎么去使用"
+echo "recovery log或'logcat'文件调试问题"
+echo 
+
+

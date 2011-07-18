@@ -1,0 +1,109 @@
+############################################################################
+#
+# Copyright (c) 2010-2011 dsixda - dislam@rocketmail.com
+#
+# Android Kitchen is 100% free.  This script file is intended for personal
+# and/or educational use only.  It may not be duplicated for monetary
+# benefit or any other purpose without the permission of the developer.
+#
+############################################################################
+
+#
+# This script is normally used after removing the busybox symlinks in the 
+# update(r)-script.
+#
+
+if [ ! -d WORKING_* ]
+then
+  echo "未找到工作目录"
+  exit 1
+fi
+
+cd WORKING_*
+
+echo
+
+if [ -e system/bin/busybox ]
+then
+  echo "移除 /system/bin/busybox"
+  rm -f system/bin/busybox
+fi
+
+if [ -d system/xbin ]
+then
+  echo "发现 /system/xbin"
+else
+  echo "创建 /system/xbin"
+  mkdir system/xbin
+fi
+
+if [ ! -e system/xbin/busybox ]
+then
+  echo "添加 /system/xbin/busybox"
+  cp -f ../tools/busybox_files/busybox system/xbin/
+
+else
+
+  version=`more ../tools/busybox_files/version.txt | sed -e 's/BusyBox \(.*\)$/\1/g'`
+
+  echo
+  echo "工作目录已存在/system/xbin/busybox"
+  echo -n "替换为 BusyBox $version (y/n)? (默认: y): "
+  read replace_bin_bb
+  echo
+
+  if [ "$replace_bin_bb" == "n" ]
+  then
+    echo "取消"
+  else
+    echo "更换 /system/xbin/busybox"
+    cp -f ../tools/busybox_files/busybox system/xbin/
+  fi
+fi
+
+
+#
+# Remove 'installbusybox' so that the 'add_busybox_to_update_script' script
+# will run completely.
+#
+
+if [ -e installbusybox ]
+then
+  rm -f installbusybox
+fi
+
+
+#
+# Now fix update-script
+#
+if [ -e META-INF/com/google/android/update-script ]
+then
+
+  cd META-INF/com/google/android
+
+  search_xbin_busybox=`grep -c "symlink.*xbin/busybox" update-script`
+  search_symlinks=`grep -c "symlink busybox " update-script` 
+  search_perm=`grep -c "set_perm.*xbin/busybox" update-script`
+
+  if [ $search_xbin_busybox -gt 0 ] || [ $search_symlinks -gt 0 ] || [ $search_perm -gt 0 ]
+  then
+    echo
+    echo "移除update-script中现存的关于/system/xbin/busybox的内容"
+    sed -i \
+      -e '/symlink.*xbin\/busybox/d' \
+      -e '/symlink busybox /d' \
+      -e '/set_perm.*xbin\/busybox/d' \
+      -e '/set_perm.*installbusybox/d' \
+      -e '/run_program.*installbusybox/d' \
+    update-script 
+  fi
+
+  cd ../../../../..
+
+  scripts/add_busybox_to_update_script
+
+else
+  echo "错误: 没有发现update-script!"
+  cd ..
+fi
+

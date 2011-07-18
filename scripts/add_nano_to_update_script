@@ -1,0 +1,57 @@
+############################################################################
+#
+# Copyright (c) 2010-2011 dsixda - dislam@rocketmail.com
+#
+# Android Kitchen is 100% free.  This script file is intended for personal
+# and/or educational use only.  It may not be duplicated for monetary
+# benefit or any other purpose without the permission of the developer.
+#
+############################################################################
+
+
+cd WORKING_*
+cd META-INF/com/google/android
+
+echo
+
+if [ -e update-script ]
+then
+
+  if [ "`grep -om 1 nano update-script`" == "nano" ]
+  then
+    echo "update-script 中包含 nano 的相关内容"
+
+  else
+
+    #
+    # Do this to prevent conflicts with the update-script in ROMs that already have the binary
+    #
+    if [ -e ../../../../system/xbin/nano ]
+    then
+
+      if [ "`find ../../../../system/bin -name nano`" == "" ]
+      then
+        echo "正在复制 system/xbin/nano 到 system/bin/nano"
+        cp -f ../../../../system/xbin/nano ../../../../system/bin/nano
+      fi
+    fi
+
+    echo "正在为 update-script 脚本添加 nano 的相关内容"
+    sed -i -e 's/set_perm 0 2000 0550 SYSTEM:etc\/init.goldfish.sh/set_perm 0 2000 0550 SYSTEM:etc\/init.goldfish.sh\nset_perm 0 0 04755 SYSTEM:bin\/nano\n/g' update-script
+
+
+    if [ "`grep -om 1 nano update-script`" != "nano" ]
+    then
+      echo "错误：无法在 update-script 脚本中添加 nano 的相关内容"
+    fi
+  fi
+
+else
+  echo "错误：未找到 update-script！"
+  cd ../../../../..
+  exit 1
+fi
+
+cd ../../../../..
+echo
+

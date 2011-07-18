@@ -1,0 +1,77 @@
+############################################################################
+#
+# Copyright (c) 2010-2011 dsixda - dislam@rocketmail.com
+#
+# Android Kitchen is 100% free.  This script file is intended for personal
+# and/or educational use only.  It may not be duplicated for monetary
+# benefit or any other purpose without the permission of the developer.
+#
+############################################################################
+
+echo
+
+if [ -d BOOT-EXTRACTED ]
+then
+  echo "已找到 BOOT-EXTRACTED 文件夹，正在检查其内容..."
+
+  if [ -d BOOT-EXTRACTED/boot.img-ramdisk ]
+  then
+    echo "已找到 boot.img-ramdisk"
+
+    if [ -e BOOT-EXTRACTED/zImage ]
+    then
+      echo "已找到 zImage"
+    else
+      echo "未找到 BOOT-EXTRACTED/zImage"
+      exit 0
+    fi
+
+  else
+    echo "未找到 BOOT-EXTRACTED/boot.img-ramdisk 文件夹！"
+    exit 0
+  fi
+
+else
+  echo "未找到 BOOT-EXTRACTED 文件夹！"
+  exit 0
+fi
+
+
+if [ -d WORKING_* ]
+then
+  echo "已找到工作目录"
+else
+  echo "未找到工作目录！"
+  exit 0
+fi
+
+
+echo 
+echo "正在打包 initrd.gz ..."
+
+cd BOOT-EXTRACTED/boot.img-ramdisk
+find . | cpio -o -H newc | gzip > ../initrd.gz
+cd ..
+rm -rf boot.img-ramdisk
+
+cd ..
+cd WORKING_*
+
+if [ -e boot.img ]
+  then
+  echo
+  echo "正在使用 NAND boot 文件夹替换工作目录中的 boot.img..."
+  rm -f boot.img
+fi
+
+if [ -d boot ]
+then
+  echo
+  echo "正在移除旧的 NAND boot 文件夹..."
+  rm -rf boot
+fi
+
+mv ../BOOT-EXTRACTED boot
+cd ..
+
+

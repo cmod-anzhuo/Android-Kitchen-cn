@@ -1,0 +1,107 @@
+############################################################################
+#
+# Copyright (c) 2010-2011 dsixda - dislam@rocketmail.com
+#
+# Android Kitchen is 100% free.  This script file is intended for personal
+# and/or educational use only.  It may not be duplicated for monetary
+# benefit or any other purpose without the permission of the developer.
+#
+############################################################################
+
+clear
+
+date_str=`date '+%m%d%y_%H%M%S'`
+files_dir=sign_files_$date_str
+
+echo
+echo "创建文件夹 `pwd`/$files_dir ..."
+mkdir $files_dir
+
+echo
+echo "---> 请把你的APK 或/和 ZIP文件放入上述文件夹中 <--"
+
+scripts/press_enter
+
+cd $files_dir
+grep_apk=`find . | grep -i \\.apk$ | sort -f`
+grep_zip=`find . | grep -i \\.zip$ | sort -f`
+grep_files="$grep_apk $grep_zip"
+
+if [ "$grep_files" != "" ]
+then
+
+  cp ../tools/signapk_files/testkey.* .
+  cp ../tools/signapk_files/signapk.jar .
+
+  echo
+
+  for filename in $grep_files
+  do
+
+    filename=`echo $filename | sed -e 's/\.\///g'`
+
+    if [ ! -e $filename ]
+    then
+
+      echo "错误: 没有找到'$filename'文件"
+
+      grep_apk2=`echo $filename | grep -i \\.apk$`
+      grep_zip2=`echo $filename | grep -i \\.zip$`
+
+      if [ "$grep_apk2" == "" ] && [ "$grep_zip2" == "" ]
+      then
+        echo "错误: 你的文件名中有空格 - 系统不充分支持"
+      fi
+    
+      break
+
+    fi
+
+
+    echo Signing $filename ...
+
+    final_file="signed_$filename"
+    final_file=`echo $final_file | sed -e 's/unsigned/(u)/g'`
+    java -jar signapk.jar testkey.x509.pem testkey.pk8 $filename $final_file
+    res=$?
+
+    if [ "$res" == "0" ]
+    then
+      rm -f $filename
+
+      # Don't add the 'signed' prefix to APK files
+      if [ "`echo $filename | grep -i \\.apk$`" != "" ]
+      then
+        mv -f $final_file $filename
+      fi
+
+    else
+      echo "签名 $filename 错误"
+      echo
+      rm -f $final_file
+    fi
+
+  done
+
+  rm -f testkey.*
+  rm -f signapk.jar
+
+  echo
+  echo
+  echo "文件夹列表:"
+  echo "---------------"
+  echo
+  ls -X
+
+  cd ..
+
+else
+  echo "错误: 没找到 *.apk 或 *.zip!"
+  echo
+  cd ..
+  echo "移除 $files_dir folder"
+  rm -rf $file_dir
+  exit 0
+fi      
+  
+echo

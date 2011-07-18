@@ -1,0 +1,329 @@
+############################################################################
+#
+# Copyright (c) 2010-2011 dsixda - dislam@rocketmail.com
+#
+# Android Kitchen is 100% free.  This script file is intended for personal
+# and/or educational use only.  It may not be duplicated for monetary
+# benefit or any other purpose without the permission of the developer.
+#
+############################################################################
+
+#
+# This script has two arguments:
+#
+# $1 = file name (mandatory)
+# $2 = "kernel_only" or "name_given" (optional)
+#
+
+
+update_file=$1
+ 
+echo "已选择 $update_file"
+
+# Trim spaces in file name
+update_file2=`echo $update_file | tr ' ' '_'`
+
+if [ "$update_file" != "$update_file2" ]
+then
+  echo "重命名为 $update_file2"
+  mv "original_update/$update_file" original_update/$update_file2
+  update_file=$update_file2
+fi
+
+#
+# Working folder name
+#
+build_dir=`scripts/set_working_folder_name $2` 
+
+
+#
+# Creating folder structure
+#
+
+echo
+echo "创建工作目录 $build_dir ..."
+mkdir $build_dir
+
+echo
+echo "解压 ROM ..."
+unzip -q original_update/$update_file -d $build_dir -x bootloader.img recovery.img recovery_signed.img userdata.img radio.img rcdata.img splash1.nb0 splash2.nb0 android-info.txt 2>/dev/null
+
+if [ "$?" == "9" ]
+then
+  echo
+  echo "错误：无法解压 ROM！"
+  cd ..
+  exit 1
+fi
+
+cd $build_dir
+
+
+
+#
+# Check for system.img and boot.img
+#
+
+echo
+
+if [ "`find . -maxdepth 1 | grep .img | grep -c system_`" == "1" ]
+then
+  echo "重命名 ..."
+  mv -v system_*.img system.img
+fi 
+
+rm -vf hboot*.img
+
+if [ "`find . -maxdepth 1 | grep .img | grep -c boot_`" == "1" ]
+then
+  echo "重命名 ..."
+  mv -v boot_*.img boot.img
+fi 
+
+
+if [ -e system.img ]
+then
+
+  echo
+  echo 找到 system.img
+
+  if [ -e boot.img ]
+  then
+    echo 找到 boot.img
+
+    #
+    # Remove any other files
+    #
+    mkdir ../temp_img
+    mv system.img ../temp_img
+    mv boot.img ../temp_img
+    echo
+    rm -vf *
+    mv ../temp_img/* .
+    rmdir ../temp_img
+
+    cd ..
+    scripts/img_files_to_working_folder no_create $2
+    exit $?
+  else
+    echo "错误：未找到 boot.img"
+    echo
+    cd ..
+    exit 1
+  fi
+fi
+
+
+if [ -d patch ]
+then
+
+  echo 
+  echo "错误：这只是一个ROM的升级包，并不是一个完整的ROM！中止。"
+  cd ..
+  exit 1
+
+elif [ ! -d system ] && [ ! -d SYSTEM ]
+then
+
+  echo
+  echo "错误：未找到system文件夹！"
+  cd ..
+  exit 1
+
+fi
+
+#
+# Check for NAND ROM - convert the boot folder to boot.img
+#
+if [ ! -e boot.img ]
+then
+  if [ -e boot/initrd.gz ] && [ -e boot/zImage ]
+  then
+    echo
+    echo "检测到 NAND ROM，正在转换 boot 文件夹为 boot.img 以"
+    echo "便与厨房的功能相兼容(会在 ROM 打包时自动转换)..."
+
+    cd ..
+    scripts/ensure_nand_extracted no_clear
+    scripts/build_boot_img
+    cd WORKING_*
+
+  #
+  # Leaked ROMs with partitions in folder format
+  # 
+  elif [ -e BOOT/kernel ] && [ -e BOOT/base ] && [ -e BOOT/cmdline ] && [ -d BOOT/RAMDISK ]
+  then
+      echo "分区为文件夹格式；BOOT 文件夹将需要转换为一个 boot.img ..."
+   
+    cd ..
+    scripts/build_boot_img_from_folder_form
+    cd WORKING_*
+
+  else
+
+    #
+    # Check if ROM has no boot.img inside
+    #
+
+    build_dir=`pwd`
+    cd ..
+    scripts/check_no_bootimg $build_dir
+    cd $build_dir
+
+    if [ ! -e boot.img ]
+    then
+      echo "错误：未找到 boot.img，无法继续"
+      echo
+      cd ..
+      echo "删除 $build_dir ..."
+      rm -rf $build_dir
+      echo
+      exit 1
+    fi
+  fi
+fi
+
+
+#
+# Remove bad symlinks (*.lnk)
+#
+if [ -d system/bin ]
+then
+  rm -fv system/bin/*.lnk
+fi
+
+if [ -d system/xbin ]
+then
+  rm -fv system/xbin/*.lnk
+fi
+
+
+if [ -d META-INF ]
+then
+  cd META-INF 
+  rm -f CERT.RSA CERT.SF MANIFEST.MF
+  cd ..
+else
+  echo
+  echo "警告：未在工作目录中找到META-INF文件夹！"
+fi
+
+
+cd ..
+echo
+
+if [ "$2" != "kernel_only" ] && [ "$2" != "name_given" ]
+then
+
+  scripts/check_no_update_script
+  error_code=$?
+
+  cd WORKING_*
+  cd META-INF/com/google/android
+
+
+  if [ -e updater-script ] && [ -e update-script ]
+  then
+    echo
+    echo "警告：updater-script 和 update-script 都找到。"
+    echo -n "移除 updater-script(y/n)？(默认为：y)："
+
+    read enterRemove
+    echo
+
+    if [ "$enterRemove" == "n" ]
+    then
+      echo "保持updater-script, 但是要移除update-script"
+      rm -rf update-script
+
+      cd ../../../../..
+      scripts/check_no_update_script
+      error_code=$?
+
+      cd WORKING_*
+      cd META-INF/com/google/android
+
+    else 
+      echo "移除 updater-script"
+      rm -f updater-script
+    fi
+
+  fi
+  if [ -e update-binary ] && [ -e update-script ]
+  then
+    echo
+    echo "警告：update-binary 和 update-script 都找到。"
+    echo -n "移除 update-binary(y/n)？(默认为：y)："
+    read enterRemove
+    if [ "$enterRemove" != "n" ]
+    then
+    echo "正在移除 update-binary"
+      rm -f update-binary
+    else
+    echo "不移除 update-binary"
+    fi
+  fi
+
+
+  if [ -e update-script ]
+  then
+    
+    #
+    # Remove comments to prevent issues with kitchen
+    #
+    sed -i -e '/^#/d' update-script
+  fi
+
+  rm -f update-script.bak
+
+  cd ../../../../..
+
+  #
+  # Check for stuff related to stock recovery image
+  #
+  scripts/remove_recovery
+fi
+
+echo
+echo "META-INF/com/google/android 中的内容："
+
+cd WORKING_*
+cd META-INF/com/google/android
+ls -l 
+cd ../../../../..
+
+
+
+#
+# Completion
+#
+
+cd $build_dir
+
+echo
+echo "正在列出 $build_dir 的内容："
+ls -l 
+
+echo
+
+if [ -d system ]
+then
+  echo "完成设置工作目录！"
+  cd ..
+
+  if [ "$error_code" == "1" ]
+  then
+    exit 1
+  else
+    exit 0
+  fi
+
+else
+  echo "错误：设置失败"
+  cd ..
+  scripts/press_enter
+  exit 1
+fi
+
+cd ..
+

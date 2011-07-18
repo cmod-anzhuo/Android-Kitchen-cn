@@ -1,0 +1,63 @@
+############################################################################
+#
+# Copyright (c) 2010-2011 dsixda - dislam@rocketmail.com
+#
+# Android Kitchen is 100% free.  This script file is intended for personal
+# and/or educational use only.  It may not be duplicated for monetary
+# benefit or any other purpose without the permission of the developer.
+#
+############################################################################
+
+
+cd WORKING_*
+cd META-INF/com/google/android
+
+if [ -e update-script ]
+then
+
+  if [ "`grep -om 1 sysro update-script`" == "sysro" ] && [ "`grep -om 1 sysrw update-script`" == "sysrw" ]
+  then
+    echo "update-script 中包含 sysro/sysrw "
+
+  else
+
+    #
+    # Do this to prevent conflicts with the update-script in ROMs that already have the binary
+    #
+    if [ -e ../../../../system/xbin/sysro ]
+    then
+
+      if [ "`find ../../../../system/bin -name sysro`" == "" ]
+      then
+        echo "正在复制 system/xbin/sysro 到 system/bin/sysro"
+        cp -f ../../../../system/xbin/sysro ../../../../system/bin/sysro
+      fi
+    fi
+
+    if [ -e ../../../../system/xbin/sysrw ]
+    then
+
+      if [ "`find ../../../../system/bin -name sysrw`" == "" ]
+      then
+        echo "正在复制 system/xbin/sysrw 到 system/bin/sysrw"
+        cp -f ../../../../system/xbin/sysrw ../../../../system/bin/sysrw
+      fi
+    fi
+
+    echo
+    echo "正在为 update-script 脚本添加 sysro 和 sysrw "
+    perl -pi -e 's/set_perm 0 2000 0550 SYSTEM:etc\/init.goldfish.sh/set_perm 0 2000 0550 SYSTEM:etc\/init.goldfish.sh\nset_perm 0 0 04755 SYSTEM:bin\/sysrw\nset_perm 0 0 04755 SYSTEM:bin\/sysro\n/g' update-script
+ 
+    if [ "`grep -om 1 sysro update-script`" != "sysro" ] || [ "`grep -om 1 sysrw update-script`" != "sysrw" ]
+    then
+      echo "错误：无法在 update-script 脚本添加 sysro/sysrw 的相关内容"
+    fi
+  fi
+
+else
+  echo "错误：未找到 update-script！"
+fi
+
+cd ../../../../..
+echo
+

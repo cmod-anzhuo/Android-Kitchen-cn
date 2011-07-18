@@ -1,0 +1,57 @@
+############################################################################
+#
+# Copyright (c) 2010-2011 dsixda - dislam@rocketmail.com
+#
+# Android Kitchen is 100% free.  This script file is intended for personal
+# and/or educational use only.  It may not be duplicated for monetary
+# benefit or any other purpose without the permission of the developer.
+#
+############################################################################
+
+
+cd WORKING_*
+
+if [ -d system/etc/init.d ]
+then
+
+  echo
+  echo "正在检查是否需要更新 update-script 脚本以支持 /system/etc/init.d ..."
+
+  cd META-INF/com/google/android
+
+  if [ -e update-script ]
+  then
+
+    if [ `grep -c "set_perm_recursive .*SYSTEM:etc/init.d$" update-script` == 0 ]
+    then
+
+      echo "update-script 已被修改过了"
+
+      # Look for line with set_perm_recursive of SYSTEM:
+      grep_perm=`grep set_perm_recursive update-script | grep -m 1 "SYSTEM:[ ]*$"`
+      
+      if [ "$grep_perm" == "" ]
+      then
+        sed -i -e 's/copy_dir PACKAGE:system SYSTEM:/copy_dir PACKAGE:system SYSTEM:\nset_perm_recursive 0 0 0777 0777 SYSTEM:etc\/init.d/g' update-script
+      else
+        sed -i -e 's/\(set_perm_recursive[ ]*[^\ ]*[ ]*[^\ ]*[ ]*[^\ ]*[ ]*[^\ ]*[ ]*SYSTEM:[ ]*$\)/\1\nset_perm_recursive 0 0 0777 0777 SYSTEM:etc\/init.d/g' update-script
+      fi 
+
+      if [ `grep -c "set_perm_recursive .*SYSTEM:etc/init.d$" update-script` == 0 ]
+      then
+        echo "错误：未在 update-script 中找到需要进行更新的行"
+      fi
+
+    else
+      echo "update-script 中已经有为 init.d 文件夹设置权限的相关内容"
+    fi
+
+  else
+    echo "错误：未找到 update-script！"
+  fi
+
+  cd ../../../..
+
+fi
+
+

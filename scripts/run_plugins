@@ -1,0 +1,140 @@
+############################################################################
+#
+# Copyright (c) 2010-2011 dsixda - dislam@rocketmail.com
+#
+# Android Kitchen is 100% free.  This script file is intended for personal
+# and/or educational use only.  It may not be duplicated for monetary
+# benefit or any other purpose without the permission of the developer.
+#
+############################################################################
+
+
+clear
+
+echo 
+
+if [ ! -d scripts/plugins ] 
+then
+  echo "错误：未找到 /scripts/plugins 文件夹！"
+  exit 0
+fi
+
+cd scripts/plugins
+chmod 755 *
+grep_cmd=`find . | grep "\.plugin\$" | sed 's/.\///'`
+cd ../..
+
+
+if [ "$grep_cmd" == "" ]
+then
+  echo "未在 /scripts/plugins 文件夹中找到 *.plugin 文件！"
+  echo
+  echo "按下任意键以继续"
+  read enterKey
+  exit 0
+
+else
+
+  echo -n "请稍后 "
+
+  long_line="--------------------------------------"
+  count=0
+
+  for plugin_file in $grep_cmd
+  do
+    echo -n "."
+
+    # Converting end-of-line character in files created in DOS 
+    cat scripts/plugins/$plugin_file | tr -d '\r' > scripts/plugins/temp.plugin
+    rm -f scripts/plugins/$plugin_file
+    mv scripts/plugins/temp.plugin scripts/plugins/$plugin_file
+    chmod +x scripts/plugins/$plugin_file
+  done
+
+  echo
+
+  #
+  # Show the menu
+  #
+
+  while :
+  do
+
+    clear
+    count=0
+    refresh_names=0
+
+    echo
+    echo "插件脚本"
+    echo $long_line
+    echo
+
+    for plugin_file in $grep_cmd 
+    do
+      count=$(($count+1))
+
+      # Store file names in an array
+      file_array[$count]=$plugin_file
+
+      no_ext=`echo $plugin_file | sed 's/.plugin[.]*[a-zA-Z0-9]*//'`
+      echo "  ($count) $no_ext"
+
+    done
+
+    echo
+    echo $long_line
+    echo
+    echo "  0 - 退出    r - 刷新列表"
+    echo
+    echo
+    echo -n "输入一个选择："
+    read enterOption
+
+    if [ "$enterOption" == "0" ]
+    then
+      exit 0
+    fi
+
+    if [ "$enterOption" == "r" ]
+    then
+      refresh_names=1
+    
+    # Verify input is a number
+    elif [ "`echo $enterOption | sed 's/[0-9]*//'`" == "" ]
+    then
+
+      file_chosen=${file_array[$enterOption]}
+    
+      if [ "$file_chosen" == "" ]
+      then
+        continue
+      fi
+
+      #
+      # Run script
+      #
+      if [ -e scripts/plugins/$file_chosen ]
+      then
+        clear
+        scripts/plugins/$file_chosen
+      else
+        echo "错误：未找到文件！"
+        refresh_names=1 
+      fi
+
+      scripts/press_enter
+
+    else
+      continue
+    fi
+
+    if [ refresh_names==1 ]
+    then
+      cd scripts/plugins
+      grep_cmd=`find . | grep "\.plugin\$" | sed 's/.\///'`
+      cd ../..  
+    fi
+
+  done
+fi
+

@@ -1,0 +1,72 @@
+############################################################################
+#
+# Copyright (c) 2010-2011 dsixda - dislam@rocketmail.com
+#
+# Android Kitchen is 100% free.  This script file is intended for personal
+# and/or educational use only.  It may not be duplicated for monetary
+# benefit or any other purpose without the permission of the developer.
+#
+############################################################################
+
+
+if [ "$1" == "" ]
+then
+  scripts/press_enter
+fi
+
+found_working=`ls | grep "^WORKING_"` 
+
+if [ "$found_working" != "" ]
+then
+
+  echo
+  echo "在你开始之前："
+  echo "任何位于当前主目录下的工作目录都可以被备份到 OLD_WORKING"
+  echo "文件夹中；否则的话，它们讲被删除。"
+
+  echo
+  echo "已找到以下文件夹："
+  echo $found_working
+  echo
+  echo -n "移动到 OLD_WORKING 文件夹中？ (默认为：y)："
+
+  read do_backup
+  echo
+
+  if [ "$do_backup" == "n" ]
+  then
+    echo "正在删除 ..."
+    rm -rf WORKING_* 2>/dev/null
+
+    if [ "$?" == "1" ]
+    then
+      exit 1
+    fi
+
+  else
+
+    # Grab this value again, in case the user manually deleted the
+    # folder after he/she was prompted
+    found_working=`ls | grep -m 1 WORKING_` 
+
+    if [ "$found_working" != "" ]
+    then
+
+      #
+      # Make backup 
+      #
+
+      echo "移动旧工作文件夹到original_update ..."
+      mv WORKING_* original_update 2>/dev/null
+
+      if [ "$?" == "1" ]
+      then
+        exit 1
+      fi
+    fi
+  fi
+
+  echo
+
+fi
+

@@ -1,0 +1,154 @@
+############################################################################
+#
+# Copyright (c) 2010-2011 dsixda - dislam@rocketmail.com
+#
+# Android Kitchen is 100% free.  This script file is intended for personal
+# and/or educational use only.  It may not be duplicated for monetary
+# benefit or any other purpose without the permission of the developer.
+#
+############################################################################
+
+clear
+
+if [ -d MY_DEVICE_WORKING ]
+then
+  echo "正在移除 MY_DEVICE_WORKING 文件夹"
+  rm -rf MY_DEVICE_WORKING
+fi
+
+if [ -d MY_KERNEL ]
+then
+  echo "正在移除 MY_KERNEL 文件夹"
+  rm -rf MY_KERNEL
+fi
+
+if [ -d BOOT-EXTRACTED ]
+then
+  echo "正在移除 BOOT-EXTRACTED 文件夹"
+  rm -rf BOOT-EXTRACTED
+fi
+
+
+
+clear
+echo
+echo "*************************************************************"
+echo
+echo "--> 为你的设备获取一个当前的ROM <--"
+echo
+echo "*************************************************************"
+echo
+
+scripts/check_rom no_info kernel_only
+
+# If working folder is open and cannot move it, handle the error properly
+if [ "$?" != "1" ]
+then
+  scripts/press_enter
+else
+  exit 1
+fi
+
+if [ -d WORKING_* ]
+then
+
+  cd WORKING_*
+
+  if [ -d system ]
+  then
+    cd ..
+    scripts/ensure_boot_extracted
+
+  else
+    cd ..
+    exit 0
+  fi
+
+else
+  exit 0
+fi
+
+if [ ! -d BOOT-EXTRACTED ]
+then
+  echo "错误：未找到 BOOT-EXTRACTED 文件夹"
+  exit 0
+fi
+
+
+echo 
+echo "正在重命名工作目录为 MY_DEVICE_WORKING"
+mv WORKING_* MY_DEVICE_WORKING
+
+echo
+echo "正在创建文件夹 MY_KERNEL"
+mkdir MY_KERNEL
+
+
+
+#
+# Copy my device's kernel to MY_KERNEL
+# Also copy my device's modules/drivers to MY_KERNEL
+#
+
+echo "正在复制 zImage 到 MY_KERNEL"
+cp BOOT-EXTRACTED/zImage MY_KERNEL/
+
+#
+# We need this step so that we can determine base address
+# when porting!
+#
+echo "正在复制 boot.img 到 MY_KERNEL"
+cp MY_DEVICE_WORKING/boot.img MY_KERNEL/
+
+
+if [ -d MY_DEVICE_WORKING/system/lib/modules ]
+then
+  mkdir -p MY_KERNEL/system/lib/modules
+  echo 
+  echo "正在复制无线模块(system/lib/modules) ..."
+  cp -r MY_DEVICE_WORKING/system/lib/modules/* MY_KERNEL/system/lib/modules/
+fi
+
+if [ -d MY_DEVICE_WORKING/system/usr ]
+then
+  mkdir -p MY_KERNEL/system/usr
+  echo 
+  echo "正在复制按键设置文件(system/usr) ..."
+  cp -r MY_DEVICE_WORKING/system/usr/* MY_KERNEL/system/usr/
+fi
+
+if [ -d MY_DEVICE_WORKING/system/lib/hw ]
+then
+  mkdir -p MY_KERNEL/system/lib/hw
+  echo 
+  echo "正在复制背光灯库(system/lib/hw) ..."
+  cp -r MY_DEVICE_WORKING/system/lib/hw/* MY_KERNEL/system/lib/hw/
+fi
+
+if [ -e MY_DEVICE_WORKING/system/etc/vold.fstab ]
+then
+  mkdir -p MY_KERNEL/system/etc
+  echo 
+  echo "正在复制存储卡挂载信息(system/etc/vold.fstab) ..."
+  cp -v MY_DEVICE_WORKING/system/etc/vold.fstab MY_KERNEL/system/etc/
+fi
+
+if [ -e MY_DEVICE_WORKING/system/etc/vold.conf ]
+then
+  mkdir -p MY_KERNEL/system/etc
+  echo 
+  echo "正在复制存储卡挂载信息 (system/etc/vold.conf) ..."
+  cp -v MY_DEVICE_WORKING/system/etc/vold.conf MY_KERNEL/system/etc/
+fi
+
+if [ -d MY_DEVICE_WORKING/system/modules ]
+then
+  mkdir -p MY_KERNEL/system/modules
+  echo 
+  echo "正在复制其他模块 (system/modules) ..."
+  cp -r MY_DEVICE_WORKING/system/modules/* MY_KERNEL/system/modules/
+fi
+
+
+rm -rf BOOT-EXTRACTED
+

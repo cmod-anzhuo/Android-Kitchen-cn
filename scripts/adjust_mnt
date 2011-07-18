@@ -1,0 +1,352 @@
+############################################################################
+#
+# Copyright (c) 2010-2011 dsixda - dislam@rocketmail.com
+#
+# Android Kitchen is 100% free.  This script file is intended for personal
+# and/or educational use only.  It may not be duplicated for monetary
+# benefit or any other purpose without the permission of the developer.
+#
+############################################################################
+
+#
+# This script has one mandatory argument:
+# $1 = updater-script/update-script
+#
+
+
+if [ "$1" != "" ]
+then
+
+  device_name=`scripts/get_device_name`
+
+  change_mnt=`scripts/get_edify_def_val $device_name change_mnt`
+  change_mnt_dell=`scripts/get_edify_def_val $device_name change_mnt_dell`
+
+  if [ "$change_mnt" == "yes" ] || [ "$change_mnt_dell" == "yes" ]
+  then
+    param1=`scripts/get_edify_def_val $device_name param1`
+    param2=`scripts/get_edify_def_val $device_name param2`
+    param1_sdcard=`scripts/get_edify_def_val $device_name param1_sdcard`
+    param2_sdcard=`scripts/get_edify_def_val $device_name param2_sdcard`
+    param1_cache=`scripts/get_edify_def_val $device_name param1_cache`
+    param2_cache=`scripts/get_edify_def_val $device_name param2_cache`
+    fix_boot=`scripts/get_edify_def_val $device_name fix_boot`
+    use_cache_not_tmp=`scripts/get_edify_def_val $device_name use_cache_not_tmp`
+    sys_mnt=`scripts/get_edify_def_val $device_name sys_mnt`
+    cache_mnt=`scripts/get_edify_def_val $device_name cache_mnt`
+    boot_mnt=`scripts/get_edify_def_val $device_name boot_mnt`
+    data_mnt=`scripts/get_edify_def_val $device_name data_mnt`
+    sdcard_mnt=`scripts/get_edify_def_val $device_name sdcard_mnt`
+  fi
+
+  cd WORKING_*
+  cd META-INF/com/google/android
+
+
+  if [ "$change_mnt" == "yes" ]
+  then
+
+    if [ "$param1_cache" == "UNKNOWN" ]
+    then
+      param1_cache=$param1
+    fi
+    if [ "$param2_cache" == "UNKNOWN" ]
+    then
+      param2_cache=$param2
+    fi
+    if [ "$param1_sdcard" == "UNKNOWN" ]
+    then
+      param1_sdcard=$param1
+    fi
+    if [ "$param2_sdcard" == "UNKNOWN" ]
+    then
+      param2_sdcard=$param2
+    fi
+
+
+    #################################
+    # change_mnt==yes; updater-script
+    #################################
+
+    if [ "$1" == "updater-script" ]
+    then
+      sed -i \
+        -e 's/format("MTD", "system")/format("'"$param1"'", "'"$param2"'", "'"$sys_mnt"'")/g' \
+        -e 's/format("MTD", "cache")/format("'"$param1_cache"'", "'"$param2_cache"'", "'"$cache_mnt"'")/g' \
+        -e 's/format("MTD", "boot")/format("'"$param1"'", "'"$param2"'", "'"$boot_mnt"'")/g' \
+        -e 's/format("MTD", "userdata")/format("'"$param1"'", "'"$param2"'", "'"$data_mnt"'")/g' \
+        \
+        -e 's/format("'"$param1"'", "MTD", "system")/format("'"$param1"'", "'"$sys_mnt"'")/g' \
+        -e 's/format("'"$param1_cache"'", "MTD", "cache")/format("'"$param1_cache"'", "'"$cache_mnt"'")/g' \
+        -e 's/format("'"$param1"'", "MTD", "boot")/format("'"$param1"'", "'"$boot_mnt"'")/g' \
+        -e 's/format("'"$param1"'", "MTD", "userdata")/format("'"$param1"'", "'"$data_mnt"'")/g' \
+        \
+        -e 's/mount("MTD", "system"/mount("'"$param1"'", "'"$param2"'", "'"$sys_mnt"'"/g' \
+        -e 's/mount("MTD", "cache"/mount("'"$param1_cache"'", "'"$param2_cache"'", "'"$cache_mnt"'"/g' \
+        -e 's/mount("MTD", "boot"/mount("'"$param1"'", "'"$param2"'", "'"$boot_mnt"'"/g' \
+        -e 's/mount("MTD", "userdata"/mount("'"$param1"'", "'"$param2"'", "'"$data_mnt"'"/g' \
+        -e 's/mount("MTD", "sdcard"/mount("'"$param1_sdcard"'", "'"$param2_sdcard"'", "'"$sdcard_mnt"'"/g' \
+        \
+        -e 's/mount("'"$param1"'", "MTD", "system"/mount("'"$param1"'", "'"$sys_mnt"'"/g' \
+        -e 's/mount("'"$param1_cache"'", "MTD", "cache"/mount("'"$param1_cache"'", "'"$cache_mnt"'"/g' \
+        -e 's/mount("'"$param1"'", "MTD", "boot"/mount("'"$param1"'", "'"$boot_mnt"'"/g' \
+        -e 's/mount("'"$param1"'", "MTD", "userdata"/mount("'"$param1"'", "'"$data_mnt"'"/g' \
+        -e 's/mount("'"$param1_sdcard"'", "MTD", "sdcard"/mount("'"$param1_sdcard"'", "'"$sdcard_mnt"'"/g' \
+        updater-script
+
+
+      #
+      # Certain devices use/require a special way of flashing the boot.img
+      #
+      # NOTE: :a;N;$!ba; = reads multi-line pattern as one-line pattern
+      #
+
+      if [ -e updater-script.orig ] && [ "$fix_boot" != "yes" ]
+      then
+        grep_boot=`grep -c "^package_extract_file(\"boot.img\", \"$boot_mnt\");" updater-script.orig`
+        if [ $grep_boot != 0 ]
+        then
+          fix_boot=yes
+        fi
+      fi
+
+      if [ "$fix_boot" == "yes" ]
+      then
+        sed -i -e ':a;N;$!ba;s/assert(package_extract_file("boot.img", "\/tmp\/boot.img"),\n[ ]*write_raw_image("\/tmp\/boot.img", "boot"),\n[ ]*delete("\/tmp\/boot.img"));/package_extract_file("boot.img", "'"$boot_mnt"'");/g' updater-script
+      fi
+
+
+      #
+      # Fix cases where some formats/mounts have different numbers of args in the same file
+      #
+      # e.g.  format ext3 SYSTEM:
+      #       format DATA:
+      #
+
+      mount_four_args=`grep "^mount" updater-script | grep -c $param2`
+      if [ "$param2_cache" != "$param2" ]
+      then
+        mount_four_args2=`grep "^mount" updater-script | grep -c $param2_cache`
+      else
+        mount_four_args2=0
+      fi
+      if [ "$param2_sdcard" != "$param2" ]
+      then
+        mount_four_args3=`grep "^mount" updater-script | grep -c $param2_sdcard`
+      else
+        mount_four_args3=0
+      fi
+      mount_four_args_total=$(($mount_four_args+$mount_four_args2+$mount_four_args3))
+      mount_all=`grep -c "^mount" updater-script`
+
+
+      if [ $mount_all -gt $mount_four_args_total ] && [ $mount_four_args_total -gt 0 ]
+      then
+        sed -i \
+          -e 's/mount("'"$param1"'", "'"$param2"'",/mount("'"$param1"'",/g' \
+          -e 's/mount("'"$param1_cache"'", "'"$param2_cache"'",/mount("'"$param1_cache"'",/g' \
+          -e 's/mount("'"$param1_sdcard"'", "'"$param2_sdcard"'",/mount("'"$param1_sdcard"'",/g' \
+        updater-script
+      fi
+
+
+      fmt_three_args=`grep "^format" updater-script | grep -c $param2`
+      if [ "$param2_cache" != "$param2" ]
+      then
+        fmt_three_args2=`grep "^format" updater-script | grep -c $param2_cache`
+      else
+        fmt_three_args2=0
+      fi
+      
+      fmt_three_args_total=$(($fmt_three_args+$fmt_three_args2))
+      fmt_all=`grep -c "^format" updater-script`
+
+      if [ $fmt_all -gt $fmt_three_args ] && [ $fmt_three_args -gt 0 ]
+      then
+        sed -i -e 's/format("'"$param1"'", "'"$param2"'",/format("'"$param1"'",/g' updater-script
+        sed -i -e 's/format("'"$param1_cache"'", "'"$param2_cache"'",/format("'"$param1_cache"'",/g' updater-script
+      fi
+
+
+      #
+      # Cover the case where the ROM uses a different filesystem from what was defined
+      # above (for both 'format' and 'mount')
+      #
+      # e.g. updater-script uses ext4 in CyanogenMod instead of the expected ext3
+      #
+
+      if [ -e updater-script.orig ]
+      then
+        param1_old=`grep -m 1 "format(.*$sys_mnt" updater-script.orig | \
+                    sed -e 's/format("\([^"]*\).*/\1/g'`
+        param2_old=`grep -m 1 "format(.*$sys_mnt" updater-script.orig | \
+                    sed -e 's/format("[^"]*", "\([^"]*\).*/\1/g'`
+
+        if [ "$param1_old" != "" ] && [ "$param2_old" != "" ]
+        then
+
+          if [ "$param1_old" != "$param1" ]
+          then
+            sed -i -e 's/'"$param1"'/'"$param1_old"'/g' updater-script 
+          fi
+          if [ "$param2_old" != "$param2" ]
+          then
+            sed -i -e 's/'"$param2"'/'"$param2_old"'/g' updater-script
+          fi
+        fi
+
+        #
+        # Check if the updater-script uses /cache instead of /tmp for run_program
+        # or writing images.
+        #
+        
+        if [ `grep -c "/cache/boot.img" updater-script.orig` -gt 0 ] && \
+            [ `grep -c "\"/tmp/" updater-script` -gt 0 ]
+        then
+          use_cache_not_tmp=yes
+        elif [ `grep -c "\"/tmp/" updater-script` -gt 0 ]
+        then
+          use_cache_not_tmp=no
+        fi
+      fi
+
+      #
+      # use_cache_not_tmp can be set to 'yes' in either edify_defs file or from updater-script.orig
+      #
+      if [ "$use_cache_not_tmp" == "yes" ]
+      then
+        sed -i -e 's/\/tmp\//\/cache\//g' updater-script
+      fi
+
+
+      #
+      # Fix case where a shell script was used for mounting instead of the 'mount' command
+      #
+      if [ `grep -c "mount(\".*$sys_mnt\", \".*\"" updater-script` -gt 0 ]
+      then
+        if [ `grep -c "auto \\$PARTITION \\$ANDROID_ROOT" updater-script` -gt 0 ]
+        then
+          sed -i -e '/mount(".*'"$sys_mnt"'", ".*"/d' updater-script
+        fi
+      fi
+
+      if [ `grep -c "mount(\".*$data_mnt\", \".*\"" updater-script` -gt 0 ]
+      then
+        if [ `grep -c "auto \\$PARTITION \\$ANDROID_DATA" updater-script` -gt 0 ]
+        then
+          sed -i -e '/mount(".*'"$data_mnt"'", ".*"/d' updater-script
+        fi
+      fi
+
+      mnt_list=( $data_mnt $sys_mnt $cache_mnt $boot_mnt $sdcard_mnt )
+      
+      for mnt in ${mnt_list[@]}
+      do
+        if [ `grep -c "mount(\".*$mnt\", \".*\""  updater-script` -gt 0 ]
+        then
+          if [ `grep -c "mount $mnt" updater-script` -gt 0 ]
+          then
+            sed -i -e '/mount(".*'"$mnt"'", ".*"/d' updater-script
+          fi
+        fi
+      done
+
+
+    ################################
+    # change_mnt==yes; update-script
+    ################################
+
+    elif [ "$1" == "update-script" ]
+    then
+      sed -i \
+        -e 's/format '"$param1"' '"$param2"' '"$sys_mnt"'/format SYSTEM:/g' \
+        -e 's/format '"$param1_cache"' '"$param2_cache"' '"$cache_mnt"'/format CACHE:/g' \
+        -e 's/format '"$param1"' '"$param2"' '"$boot_mnt"'/format BOOT:/g' \
+        -e 's/format '"$param1"' '"$param2"' '"$data_mnt"'/format DATA:/g' \
+        \
+        -e 's/format '"$param1"' '"$sys_mnt"'/format '"$param1"' SYSTEM:/g' \
+        -e 's/format '"$param1_cache"' '"$cache_mnt"'/format '"$param1_cache"' CACHE:/g' \
+        -e 's/format '"$param1"' '"$boot_mnt"'/format '"$param1"' BOOT:/g' \
+        -e 's/format '"$param1"' '"$data_mnt"'/format '"$param1"' DATA:/g' \
+        \
+        -e 's/package_extract_file boot.img '"$boot_mnt"'/write_raw_image PACKAGE:boot.img BOOT:/g' \
+        update-script
+
+
+      #
+      # Cover the case where the ROM uses a different filesystem, such that the update-script
+      # wasn't adjusted in the above code.
+      #
+      # e.g. update-script uses ext4 in CyanogenMod instead of the expected ext3
+      #
+
+      grep_other=`grep "format .* $sys_mnt[ ]*$" update-script`  
+
+      if [ "$grep_other" != "" ]
+      then
+        sed -i \
+          -e 's/format .* '"$sys_mnt"'/format SYSTEM:/g' \
+          -e 's/format .* '"$cache_mnt"'/format CACHE:/g' \
+          -e 's/format .* '"$boot_mnt"'/format BOOT:/g' \
+          -e 's/format .* '"$data_mnt"'/format DATA:/g' \
+          \
+          update-script
+      fi
+    fi
+
+
+  ##########################
+  # For Dell
+  ##########################
+
+  elif [ "$change_mnt_dell" == "yes" ]
+  then
+    if [ "$1" == "updater-script" ]
+    then
+
+      sed -i \
+        -e 's/mount("MTD", "system"/mount("'"$param_system"'", "system"/g' \
+        -e 's/mount("MTD", "cache"/mount("'"$param_cache"'", "cache"/g' \
+        -e 's/mount("MTD", "data"/mount("'"$param_data"'", "data"/g' \
+        -e 's/write_raw_image("\/tmp\/boot.img/write_boot_raw_image("\/tmp\/boot.img/g' \
+        updater-script
+    fi
+  fi
+
+ 
+
+  ################################
+  # All cases; updater-script
+  ################################
+
+  #
+  # Fix cases where a mount hasn't been fixed yet
+  #
+  # e.g.  If updater-script contains: 
+  #         mount("MTD", "userdata", "/data");
+  #       But the other mount entries in file look like:  
+  #         mount("yaffs2", "MTD", ...);
+  #
+  if [ "$1" == "updater-script" ]
+  then
+    
+    grep_list=( yaffs2 ext3 )
+
+    for str in ${grep_list[@]}
+    do
+      grep_result=`grep -c "^mount(\"$str\"" updater-script`
+
+      if [ $grep_result -gt 0 ]
+      then
+        sed -i \
+          -e 's/^mount("MTD"/mount("'"$str"'", "MTD"/g' \
+          updater-script
+        break
+      fi
+    done
+
+  fi
+
+  cd ../../../../..
+
+fi

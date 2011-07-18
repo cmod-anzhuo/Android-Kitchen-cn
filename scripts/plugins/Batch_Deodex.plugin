@@ -1,0 +1,63 @@
+
+echo
+echo "Batch De-odexer"
+echo "---------------"
+echo
+echo "这个脚本会获取所有original_update文件夹下的ROM,"
+echo "de-odex他们,和一起移动他们工作目录到一个新文件夹."
+echo
+echo "---> 将你的ROM放到original_update <--"
+
+scripts/press_enter
+
+cd original_update
+
+grep_zip=`find . | grep -i \\.zip$ | sort -f`
+grep_app=`find . | grep -i \\.app$ | sort -f`
+grep_img=`find . | grep system.img$`
+grep_files="$grep_app $grep_zip $grep_img"
+
+cd ..
+
+if [ "$grep_files" != "" ]
+then
+
+  scripts/make_backup_working no_prompt
+
+  date_str=`date '+%m%d%y_%H%M%S'`
+  done_dir="batch_$date_str"
+
+  echo
+  echo "创建文件夹$done_dir"
+  echo
+  mkdir $done_dir
+
+  for filename in $grep_files
+  do
+
+    filename=`echo $filename | sed -e 's/\.\///g'`
+  
+    echo
+    echo "================================================================================="
+    echo 
+    scripts/choose_rom name_given $filename
+    scripts/do_deodex_folder "framework app"
+ 
+    echo
+    echo "移动工作目录 ..."
+    mv -v WORKING_* $done_dir/WORKING_$filename
+    echo
+
+  done
+
+  echo
+  echo "================================================================================="
+  echo 
+  echo "完成!"
+  echo
+  echo "在$done_dir文件夹下完成"
+  echo
+
+else
+  echo "错误: 没发现ROM!"
+fi      

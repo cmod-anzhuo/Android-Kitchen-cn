@@ -1,0 +1,153 @@
+############################################################################
+#
+# Copyright (c) 2010-2011 dsixda - dislam@rocketmail.com
+#
+# Android Kitchen is 100% free.  This script file is intended for personal
+# and/or educational use only.  It may not be duplicated for monetary
+# benefit or any other purpose without the permission of the developer.
+#
+############################################################################
+
+
+clear
+echo
+echo "-----------------------------------------------------------------"
+echo 
+echo "WiFi 共享这个选项会添加一个能够让你的设备变成一个"
+echo "无线路由器的软件。使用 Android 2.2 (Froyo) 或更高"
+echo "版本的设备的系统中通常已经添加了这个功能。"
+echo ""
+echo "软件将会添加到 /data/app 文件夹下。如果目前未开启"
+echo "对 /data/app 的支持，脚本会自动的进行添加。"
+echo
+echo "-----------------------------------------------------------------"
+echo
+
+scripts/pre_froyo_check
+is_old=$?
+
+if [ "$is_old" == "1" ] 
+then
+  echo -n "添加 WiFi 共享(y/n)？(默认为：y)："
+  read do_tether
+
+  if [ "$do_tether" == "n" ]
+  then
+    exit 0
+  fi
+elif [ "$is_old" == "2" ]
+then
+  echo "错误: 无法找到system文件夹!"
+  exit 0
+
+else
+  echo -n "ROM 的版本高于 Android 2.1，仍然添加软件(y/n)？(默认为：n)："
+  read do_tether
+
+  if [ "$do_tether" != "y" ]
+  then
+    exit 0
+  fi
+fi
+
+
+scripts/ensure_boot_extracted
+
+if [ ! -d WORKING_* ]
+then
+  exit 0
+fi
+
+
+
+if [ -d BOOT-EXTRACTED ] 
+then
+  echo
+else
+  echo "未找到 BOOT-EXTRACTED 文件夹"
+  exit 0
+fi
+
+
+#
+# Check for root (just look at default.prop in boot.img)
+#
+
+echo "WiFi 共享需要已添加了root权限的 ROM"
+
+if [ -d BOOT-EXTRACTED/boot.img-ramdisk ]
+then
+  cd BOOT-EXTRACTED/boot.img-ramdisk
+else
+  echo "错误：未找到 BOOT-EXTRACTED/boot.img-ramdisk 文件夹！"
+  exit 0
+fi
+
+if [ "`grep -m 1 ro.secure default.prop`" == "ro.secure=1" ] 
+then
+  echo "由于 default.prop 中  ro.secure=1，ROM 并未添加 root 权限。"
+  echo "现在即将为 ROM 添加 root 权限 ..."
+  echo
+  echo "当你准备好后点击回车以继续"
+  read enterKey
+  cd ../..
+  rm -rf BOOT-EXTRACTED
+  scripts/do_root
+
+else
+  echo "ROM 已添加了 root 权限"
+  cd ../..
+  rm -rf BOOT-EXTRACTED
+fi
+
+
+if [ -d WORKING_* ]
+then
+  echo
+else
+  exit 0
+fi
+
+
+#
+# Copy APK
+#
+
+tether_file=wireless_tether*
+
+cd WORKING_*
+
+tether_list=( wireless_tether* android.tether* )
+tether_found=0
+
+for find_tether in ${tether_list[@]}
+do
+  
+  res=`find . -name $find_tether`
+  if [ "$res" != "" ]
+  then
+    echo "$res 已找到"
+    tether_found=1
+  fi
+
+done
+
+
+if [ $tether_found == 1 ]
+then
+  cd ..
+  exit 0
+
+else
+  cd ..
+  scripts/add_data_app dont_ask
+  cd WORKING_*
+
+  echo "正在复制软件 ..."
+  cp -v ../tools/apps/$tether_file data/app/
+  cd ..
+fi
+
+echo
+echo "完成"
+
