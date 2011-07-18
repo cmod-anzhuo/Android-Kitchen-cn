@@ -91,7 +91,7 @@ else
       exit 0
     fi
 
-    new_file=cmod-anzhuo_Android_Kitchen_cn_$latest_ver.zip
+    new_file=cmod-anzhuo-Android-Kitchen-cn-$latest_ver.zip
 
     echo
     echo "正在下载 $new_file ..."
