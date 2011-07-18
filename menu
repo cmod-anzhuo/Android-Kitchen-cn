@@ -1,0 +1,122 @@
+############################################################################
+#
+# Copyright (c) 2010-2011 dsixda - dislam@rocketmail.com
+#
+# Android Kitchen is 100% free.  This script file is intended for personal
+# and/or educational use only.  It may not be duplicated for monetary
+# benefit or any other purpose without the permission of the developer.
+#
+############################################################################
+
+#!/bin/bash
+ 
+version=0.171
+
+
+if [ ! -e menu ]
+then
+  echo
+  echo "确认你运行这个文件与你安装的文件目录相同,其他的可能使用厨房脚本时会出现问题。"
+  echo "使用 ./menu 命令开始厨房, 不要使用其他一些命令!"
+  exit 0
+fi
+
+dir_list=( original_update scripts tools )
+error_found=0
+
+for check_dir in ${dir_list[@]}
+do
+  if [ ! -e $check_dir ]
+  then
+    echo "错误: 没有发现'$check_dir'目录"
+    error_found=1
+  fi
+done
+
+if [ $error_found == 1 ]
+then
+  echo
+  echo "确认你安装的厨房文件夹是正确的."
+  exit 0
+fi
+
+
+chmod 755 scripts/*
+scripts/check_install_dir
+
+if [ "$?" == "1" ]
+then
+  exit 0
+fi
+
+scripts/init_kitchen
+scripts/check_binaries
+
+if [ "$?" == "1" ]
+then
+  exit 0
+fi
+
+
+while :
+do
+
+  clear
+
+  echo 
+  echo "============================================================"
+  echo " HTC Android Kitchen $version - by dsixda (xda-developers.com)"
+  echo "              CMOD汉化 欢迎光临www.anzhuo.cn论坛              "
+  echo "============================================================"
+  echo
+  echo "  1 - 建立工作文件夹并分解rom文件"
+  echo "  2 - 添加 root 权限"
+  echo "  3 - 添加 BusyBox"
+  echo "  4 - 禁用开机音乐"
+  echo "  5 - 添加 WiFi 共享"
+  echo "  6 - 对所有的 *.apk 执行 Zipalign 以优化内存使用"
+  echo "  7 - 更改ROM是否在刷机时自动wipe"
+  echo "  8 - 修改ROM的名字"
+  echo "  9 - 检查 update-script 中是否存在错误"
+  echo " 10 - 显示当前工作目录的信息"
+  echo 
+  echo "  0 - 高级定制选项"
+  echo " 99 - 将工作目录中的ROM打包"
+  echo
+  echo "  u - 更新/关于本工具"
+  echo "  x - 退出"
+  echo
+  echo 
+  echo -n "输入选择: "
+  read opt
+
+  if [ "$opt" != "x" ] && [ "$opt" != "u" ] && [ "$opt" != "1" ]
+  then
+    scripts/check_multiple_working
+  fi
+  
+  if [ "$?" != "1" ]
+  then
+    case $opt in
+      1) clear; scripts/check_rom; continue;;
+      2) scripts/do_root; continue;;
+      3) scripts/add_busybox show_help;;
+      4) scripts/disable_sounds;;
+      5) scripts/add_tether;;
+      6) scripts/do_zipalign;;
+      7) scripts/change_wipe;;
+      8) scripts/change_rom_name;;
+      9) scripts/verify_update_script; continue;;
+      10) scripts/show_rom_info;;
+      0) scripts/menu_advanced $version; continue;;
+      99) scripts/build_rom;;
+      u) scripts/about $version; continue;;
+      x) scripts/init_kitchen; clear; echo; echo "感谢使用，再见。"; echo; exit 1;;
+      *) echo "无效选择"; continue;;
+    esac
+  fi
+
+  scripts/press_enter
+
+done
+
