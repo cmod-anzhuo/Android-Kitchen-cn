@@ -10,7 +10,7 @@
 
 #
 # This script is normally used after removing the busybox symlinks in the 
-# update(r)-script.
+# update(r)-script.  It then repairs the busybox installation.
 #
 
 if [ ! -d WORKING_* ]
