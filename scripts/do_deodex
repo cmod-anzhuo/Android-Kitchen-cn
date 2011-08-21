@@ -29,13 +29,6 @@ do
   echo "----------------------------------------------------------------"
   echo
 
-  if [ `ls tools/deodex_files | grep -c smali` -gt 2 ]
-  then
-    echo "错误: tools/deodex_files 有多个版本的 smali/baksmali!"
-    scripts/press_enter
-    exit 0
-  fi
-
   if [ ! -d WORKING_* ]
   then
     echo "未找到工作目录！"
@@ -175,10 +168,29 @@ do
   fi
 
 
+  sgs2_fix=no
+
+  # Add java.awt.jar to framework folder (fix Email.apk and MobilePrint.apk)
+  # - Thanks to xeudoxus
+  if [ `echo $dir_list | grep -c app` -gt 0 ] && \
+      [ -e system/framework/com.samsung.device.jar ] && [ ! -e system/framework/java.awt.jar ]
+  then
+    if [ -e system/app/Email.apk ] || [ -e system/app/MobilePrint.apk ] 
+    then
+      sgs2_fix=yes
+      cp -f ../tools/samsung_files/java.awt.jar system/framework/
+    fi
+  fi
+
   cd ..
   scripts/do_deodex_folder "$dir_list"
 
   cd WORKING_*
+
+  if [ "$sgs2_fix" == "yes" ]
+  then
+    rm -f system/framework/java.awt.jar
+  fi
 
   num_odex_app=`find system/app | grep -c "\.odex$"`
   num_odex_fr=`find system/framework | grep -c "\.odex$"`

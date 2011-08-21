@@ -55,74 +55,21 @@ then
     echo "  2 - 运行Ext2Explore (EXT2/EXT3/EXT4)"
     echo "  3 - 我已完成提取 / 中止"
     echo
-    echo -n "选择号码: "
+    echo
+    echo "注意: 如果上述工具在提取时出现问题, 请尝试其他选项."
+    echo
+    echo -n "选择号码:  "
 
     read enterNumber
 
     if [ "$enterNumber" == "1" ]
     then
-
-      echo
-      echo "####################################################################"
-      echo 
-      echo " 请按照下面的说明来将文件从 $img_file 中提取出来："
-      echo 
-      echo " 1) 当Explore2fs出现, 使用'File->Open Image' 来打开:"
-      echo "    $dos_path\\$img_file"
-      echo
-      echo " 2) 在加载后，右键点击左侧框中的硬盘图标，然后选择Export Directory"
-      echo
-      echo " 3) 选择 $dos_path"
-      echo
-      echo " 4) 等待提取完成，然后关闭 Explore2fs"
-      echo
-      echo "NOTE: 如果这个工具发生提取错误, 则关闭它,"
-      echo "      回到菜单尝试选着其他列表选项."       
-      echo 
-      echo "####################################################################"
-      echo
-
-      tools/explore2fs_windows/explore2fs.exe &
-
-      echo 
-      echo ">>>> 请确定在按回车键之前完成了以上的操作！ <<<<"
-      echo
-
-      scripts/press_enter
+      scripts/show_explore2fs $img_dir $img_file
 
     elif [ "$enterNumber" == "2" ]
     then
-
-      echo 
-      echo "#####################################################################"
-      echo 
-      echo " 请按照下面的说明来将文件从 $img_file 中提取出来："
-      echo 
-      echo " 1) 忽略 'Cannot Read Disk' 错误提示 (按 'OK') ，如果出现提示的话。"
-      echo 
-      echo " 2) 运行Ext2Explore,使用'File->Open Image' 来打开:"
-      echo "    $dos_path\\$img_file"
-      echo
-      echo " 2) 在加载后，右键点击左侧框中的硬盘图标，然后选择 Export Directory"
-      echo
-      echo " 4) 选择 $dos_path"
-      echo
-      echo " 5) 等待提取完成，然后关闭 Explore2fs"
-      echo
-      echo "NOTE: 如果这个工具发生提取错误, 则关闭它,"
-      echo "      回到菜单尝试选着其他列表选项."      
-      echo      
-      echo "#####################################################################"
-      echo
-
-      tools/ext2read_windows/ext2explore.exe &
-
-      echo 
-      echo ">>>> 请确定在按回车键之前完成了以上的操作！ <<<<"
-      echo
-
-      scripts/press_enter
-
+      scripts/show_ext2explore $img_dir $img_file
+    
     elif [ "$enterNumber" == "3" ]
     then
       break
@@ -163,7 +110,14 @@ then
   
   if [ "$res" == "0" ]
   then
-    sudo cp -R ../tmp/* .
+    
+    if [ "$img_file" == "ext4_cache.img" ]
+    then
+      sudo cp ../tmp/recovery/sec_csc.zip .
+    else
+      sudo cp -R ../tmp/* .
+    fi
+
     sudo umount ../tmp
     rmdir ../tmp
     sudo chown -R $user_ *
@@ -205,10 +159,17 @@ then
     then
 
       echo "正在复制文件"
-      cp -R /tmp/for_kitchen/ system/
+
+      if [ "$img_file" == "ext4_cache.img" ]
+      then
+        cp /tmp/for_kitchen/recovery/sec_csc.zip .
+      else
+        cp -R /tmp/for_kitchen/ $img_dir/
+      fi
+
       umount /tmp/for_kitchen/
       rmdir /tmp/for_kitchen/
-      mv $img_file system/$img_file
+      mv $img_file $img_dir/$img_file
       cd system
 
       rm -f unyaffs*stackdump

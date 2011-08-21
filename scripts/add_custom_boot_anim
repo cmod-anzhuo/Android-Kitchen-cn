@@ -47,7 +47,7 @@ echo
 
 if [ -d data/local ]
 then
-  echo "/data/local 已存在"
+  echo /data/local 已存在
 else
   echo "正在创建 /data/local"
   mkdir -p data/local

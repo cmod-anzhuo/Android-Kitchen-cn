@@ -11,16 +11,21 @@
 
 clear
 
+scripts/check_galaxy_s
+
+if [ "$?" == "1" ]
+then
+  echo
+  echo "不支持这个ROM"
+  exit 0
+fi
+
 echo
 echo "----------------------------------------------------------------"
 echo  
 echo "Nano 是一个文本编辑器，你可以通过在你的电脑上使用 adb 命令"
 echo "行工具或者你的 Android 设备上的终端仿真器(例如ConnectBot)"
 echo "来运行它。如要在一个 shell 中运行它，请输入：nano"
-echo
-echo "同时包含的脚本 'sysrw' 和 'sysro' 能你让你很容易的挂载"
-echo "/system 文件夹(挂载为读写或是只读)，这样就可以达到编辑"
-echo "system分区中文件的目的。"
 echo
 echo "----------------------------------------------------------------"
 echo
@@ -106,19 +111,12 @@ echo
 nano_path=`find . -name nano`
 if [ "$nano_path" == "" ] 
 then
-  echo "正在添加 /system/bin/nano"
-  cp ../tools/nano_files/nano system/bin/
-  cp ../tools/nano_files/sysrw system/bin/
-  cp ../tools/nano_files/sysro system/bin/
+  echo "Adding /system/xbin/nano"
+  cp ../tools/nano_files/nano system/xbin/
 else 
   echo "已找到 $nano_path"
 fi
 
 cd ..
 scripts/add_nano_to_update_script
-res=$?
 
-if [ "$res" != "1" ]
-then
-  scripts/add_sysrorw_to_update_script
-fi

@@ -44,18 +44,18 @@ echo
 
 if [ -d WORKING_* ]
 then
-  echo "找到工作目录"
+  echo 找到工作目录
   cd WORKING_*
 else
-  echo "未找到工作目录，你需要先创建一个！"
+  echo 未找到工作目录，你需要先创建一个！
   exit 0
 fi
 
 if [ -d data/app ]
 then
-  echo "已存在/data/app 
+  echo 已存在/data/app 
 else
-  echo "正在创建 /data/app
+  echo 正在创建 /data/app
   mkdir -p data/app
 fi
 
@@ -68,5 +68,4 @@ cd ..
 scripts/add_data_app_to_update_script
 
 echo
-echo "已完成"
-
+echo "完成添加 /data/app"

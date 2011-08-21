@@ -42,7 +42,6 @@ echo
 echo "--> 从其他设备上获取一个你想要进行移植的ROM <--"
 echo
 echo "***************************************************************"
-echo
 
 scripts/check_rom no_info
 
@@ -226,6 +225,19 @@ then
   echo "复制 modules/drivers ..."
   cp -rf ../MY_KERNEL/system/* system/
   cd ..
+fi
+
+
+#
+# Copy the zImage by itself if it's a Galaxy S2 or equivalent
+#
+
+scripts/check_galaxy_s
+if [ "$?" == "1" ]
+then
+  echo 
+  echo "复制 kernel ..."
+  cp -vf MY_KERNEL/zImage WORKING_*/
 fi
 
 

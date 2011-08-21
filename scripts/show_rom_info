@@ -47,8 +47,16 @@ fi
 
 clear
 echo
-echo -n "请稍等 ..."
+echo -n "请稍等 "
 
+
+#
+# Check if Samsung Galaxy S2 or equivalent
+#
+
+echo -n "."
+scripts/check_galaxy_s
+is_galaxy_s=$?
 
 
 #
@@ -283,21 +291,57 @@ cd ..
 
 
 
-#
-# Check if ROM contains radio.img
-#
 
-echo -n "."
-cd WORKING_*
-
-if [ -e radio.img ]
+if [ "$is_galaxy_s" == "1" ]
 then
-  radio_status=有
+
+  #
+  # Check if ROM contains modem.bin
+  #
+
+  echo -n "."
+  cd WORKING_*
+
+  if [ -e modem.bin ]
+  then
+    modem_status=YES
+  else
+    modem_status=NO
+  fi
+
+  #
+  # Check for CSC version
+  #
+
+  if [ -e system/CSCVersion.txt ]
+  then
+    csc_version=`more system/CSCVersion.txt | sed 's/[ ]*$//g'`
+  else
+    csc_version=UNKNOWN
+  fi
+
+  cd ..
+
 else
-  radio_status=无
+
+  #
+  # Check if ROM contains radio.img
+  #
+
+  echo -n "."
+  cd WORKING_*
+
+  if [ -e radio.img ]
+  then
+    radio_status=有
+  else
+    radio_status=无
+  fi
+
+  cd ..
+
 fi
 
-cd ..
 
 
 
@@ -362,20 +406,37 @@ cd ../../../../..
 #
 
 echo -n "."
-cd BOOT-EXTRACTED/boot.img-ramdisk
 
-test_start=`grep -c "start sysinit" init.rc`
-test_service=`grep -c "service sysinit" init.rc`
-
-if [[ "$test_start" == "0" || "$test_service" == "0" ]] 
+if [ "$is_galaxy_s" == "1" ]
 then
-  runparts_status="否"
+  
+  cd WORKING_*
+  test_initd=`grep -c "set_perm.*SYSTEM:etc/init.d" META-INF/com/google/android/update-script`
+  cd ..
+
+  if [ $test_initd == 0 ]
+  then
+    runparts_status=NO
+  else
+    runparts_status=YES
+  fi
+
 else
-  runparts_status="是"
+
+  cd BOOT-EXTRACTED/boot.img-ramdisk
+
+  test_start=`grep -c "start sysinit" init.rc`
+  test_service=`grep -c "service sysinit" init.rc`
+
+  if [[ "$test_start" == "0" || "$test_service" == "0" ]] 
+  then
+    runparts_status=否
+  else
+    runparts_status=是
+  fi
+
+  cd ../..
 fi
-
-cd ../..
-
 
 
 
@@ -389,8 +450,19 @@ echo " Android 系统版本                : $android_os"
 echo " 设备                            : $device_name"
 echo " 型号                            : $model"
 echo " ROM 名字                        : $rom_name"
+
+if [ "$is_galaxy_s" == "1" ]
+then
+  echo " CSC 版本                   : $csc_version"
+fi
+
 echo " Root权限 (Superuser.apk + su)   : $su_status"
-echo " Root权限 (解锁的 boot.img)      : $unsecure_status"
+
+if [ "$is_galaxy_s" == "0" ]
+then
+  echo " Root权限 (解锁的 boot.img)      : $unsecure_status"
+fi
+
 echo " 已安装BusyBox                   : $bb_status"
 echo " BusyBox run-parts 支持          : $runparts_status"
 echo " 启用了Apps2SD(app2ext)          : $apps2sd_status" 
@@ -405,7 +477,14 @@ echo " Nano 文本编辑器已安装            : $nano_status"
 echo " Bash命令解释器支持               : $bash_status"
 echo " /system/framework 已经 deodex    : $deodex_fr_status"
 echo " /system/app 已经 deodex          : $deodex_app_status"
-echo " 发现radio.img                    : $radio_status"
+
+if [ "$is_galaxy_s" == "1" ]
+then
+  echo " 发现modem.bin                : $modem_status"
+else
+  echo " 发现radio.img                    : $radio_status"
+fi
+
 echo " ROM 会清空数据分区               : $wipe_status"
 echo
 

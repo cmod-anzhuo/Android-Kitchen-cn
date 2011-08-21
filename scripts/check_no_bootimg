@@ -12,7 +12,13 @@
 dest_dir=$1
 kitchen_dir=`pwd`
 
-cd $dest_dir
+if [ "$dest_dir" == "" ]
+then
+  cd WORKING_*
+  dest_dir=`pwd`
+else
+  cd $dest_dir
+fi
 
 if [ ! -e boot.img ]
 then

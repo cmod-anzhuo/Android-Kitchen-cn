@@ -9,14 +9,16 @@
 ############################################################################
 
 #
-# This script has one mandatory parameter:
+# This script has two parameters:
 #
-# $1 = deodex /system 下的文件夹
+# $1 = folder(s) to deodex under /system (mandatory)
 #       e.g. framework
 #       e.g. "framework app" 
+# $2 = whether to enable logging (y or n) (optional) 
 #
 
 dir_list=$1
+do_log=$2
 
 if [ "$dir_list" == "" ]
 then
@@ -31,8 +33,45 @@ cd WORKING_*
 num_odex_fr=`find system/framework | grep -c "\.odex$"`
 num_odex_app=`find system/app | grep -c "\.odex$"`
 
+
+#
+# Create log file
+#
+
+if [ "$do_log" == "" ]
+then
+  echo
+  echo -n "允许记录文件 (y/n)? (默认: y): "
+  read do_log
+fi
+
+if [ "$do_log" != "n" ]
+then
+  do_log=y
+else
+  do_log=n
+fi
+
+date_str=`date '+%m%d%y_%H%M%S'`
+log_file=deodex_$date_str.log
+
+
+#
+# Go through each folder specified
+#
+
 for folder in ${dir_list[@]}
 do
+
+  if [ "$do_log" == "y" ]
+  then
+    echo
+    echo "创建记录文件 $log_file ..."
+
+    echo "" >> ../$log_file
+    echo "文件夹: $folder" >> ../$log_file
+    echo "-------------------" >> ../$log_file
+  fi
 
   if [ $folder == framework ]
   then
@@ -43,6 +82,12 @@ do
   else
     echo
     echo "错误:无效文件夹 $folder！"
+
+    if [ "$do_log" == "y" ]
+    then
+      echo "无效文件夹" >> ../$log_file
+    fi
+
     continue
   fi
 
@@ -62,17 +107,25 @@ do
   if [ "$grep_cmd" == "" ]
   then
     echo "在$path下无发现!"
+
+    if [ "$do_log" == "y" ]
+    then
+      echo "无发现" >> ../../../$log_file
+    fi
+
   else
 
     #
     # Finally, deodex each file
     #
-    echo "尝试这个版本的baksmali/smali:"
-    ls ../../../tools/deodex_files/*.jar | sed -e 's/.*\///g'
+    new_version=`more ../../../tools/deodex_files/use_this_version.txt | sed 's/[ ]*$//g'`
+    echo "--> 尝试这个版本的baksmali/smali: $new_version"    
     echo
     version=newer
-    cp -f ../../../tools/deodex_files/baksmali*.jar baksmali.jar
-    cp -f ../../../tools/deodex_files/smali*.jar smali.jar
+    cp -f ../../../tools/deodex_files/baksmali-$new_version.jar baksmali.jar
+    cp -f ../../../tools/deodex_files/smali-$new_version.jar smali.jar
+
+    version_num=$new_version
 
     for odex_file in $grep_cmd
     do
@@ -93,6 +146,11 @@ do
 
         if [ -e $odex_file ]
         then
+         
+          if [ "$do_log" == "y" ]
+          then
+            echo "* 警告: $odex_file (使用 smali/baksmali $version_num)" >> ../../../$log_file
+          fi
 
           current_dir=`pwd`
           cd ../framework
@@ -108,15 +166,18 @@ do
         
           cd $current_dir
 
-          echo
-          echo 
-          echo "-> 使用强制办法:"
+          echo "-> 使用强制办法（如果成功，忽视上面的错误）:"
           echo
 
           ../../../scripts/do_deodex_file $odex_file ../framework $fr_jar_list
            
           if [ -e $odex_file ] && [ $try == 2 ]
           then
+
+            if [ "$do_log" == "y" ]
+            then
+              echo "* 警告: $odex_file (使用强制办法$version_num)" >> ../../../$log_file
+            fi
 
             if [ $version==older ]
             then
@@ -125,8 +186,9 @@ do
               ls ../../../tools/deodex_files/*.jar | sed -e 's/.*\///g'
               echo
               version=newer
-              cp -f ../../../tools/deodex_files/baksmali*.jar baksmali.jar
-              cp -f ../../../tools/deodex_files/smali*.jar smali.jar              
+              version_num=$new_version
+              cp -f ../../../tools/deodex_files/baksmali-$new_version.jar baksmali.jar
+              cp -f ../../../tools/deodex_files/smali-$new_version.jar smali.jar              
             fi  
 
             #echo "Trying $odex_file but ignoring error ..."
@@ -135,34 +197,50 @@ do
             echo "错误: 中止 $odex_file"
             found_error=1
             
+            if [ "$do_log" == "y" ]
+            then
+              echo "* 错误: 中止 $odex_file!" >> ../../../$log_file
+            fi
+
             break
 
           elif [ ! -e $odex_file ]
           then
+            if [ "$do_log" == "y" ]
+            then
+              echo "$odex_file 成功 deodexed" >> ../../../$log_file
+            fi
+
             break
           fi
 
           if [ $version==newer ]
           then
+            old_version=`more ../../../tools/deodex_files/old_version/use_this_version.txt | sed 's/[ ]*$//g'`
             echo
-            echo "尝试使用旧版本baksmali/smali:"
-            ls ../../../tools/deodex_files/old_version/*.jar | sed -e 's/.*\///g'
+            echo "尝试使用旧版本baksmali/smali ($old_version)"
             echo
             version=older
-            cp -f ../../../tools/deodex_files/old_version/baksmali*.jar baksmali.jar
-            cp -f ../../../tools/deodex_files/old_version/smali*.jar smali.jar
+            version_num=$old_version
+            cp -f ../../../tools/deodex_files/old_version/baksmali-$old_version.jar baksmali.jar
+            cp -f ../../../tools/deodex_files/old_version/smali-$old_version.jar smali.jar
           else 
             echo
-            echo "尝试使用新版本baksmali/smali:"
-            ls ../../../tools/deodex_files/*.jar | sed -e 's/.*\///g'
+            echo "尝试使用新版本baksmali/smali ($new_version)"
             echo
             version=newer
-            cp -f ../../../tools/deodex_files/baksmali*.jar baksmali.jar
-            cp -f ../../../tools/deodex_files/smali*.jar smali.jar
+            version_num=$new_version
+            cp -f ../../../tools/deodex_files/baksmali-$new_version.jar baksmali.jar
+            cp -f ../../../tools/deodex_files/smali-$new_version.jar smali.jar
           fi
 
           try=2
 
+        else
+          if [ "$do_log" == "y" ]
+          then
+            echo "$odex_file 成功 deodexed" >> ../../../$log_file
+          fi
         fi
       done
 
@@ -188,5 +266,11 @@ do
   cd ../..
 
 done
+
+if [ "$do_log" == "y" ]
+then
+  echo
+  echo "一个简易的deodexing记录文件 $log_file"
+fi
 
 cd $base_dir

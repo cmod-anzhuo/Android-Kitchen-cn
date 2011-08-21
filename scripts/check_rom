@@ -25,6 +25,8 @@ echo " - 一个ZIP文件包含 *.img        (例如 rom.zip来自shipped ROM)"
 echo " - 一个包含 *.img 的zip文件     (例如 来自官方ROM中的rom.zip)"
 echo " - boot.img + system.img       (例如 来自官方ROM或是Nandroid备份所得)"
 echo " - 一个来自华为的 APP 文件      (例如：来自固件更新中的 UPDATE.APP)"
+echo " - 包含factoryfs.img或更多东西的TAR文件 (例如： SGS2 stock ROM)"
+echo " - factoryfs.img + 可选择 cache.img/zImage  (e.g. SGS2 stock ROM)"
 echo " - 这个厨房生成的工作目录       (例如： WORKING_old_rom)"
 echo
 

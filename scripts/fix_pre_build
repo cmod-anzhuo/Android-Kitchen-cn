@@ -204,6 +204,8 @@ elif [ -e boot/initrd.gz ] && [ -e boot/zImage ]
 then
   cmd_line="dsixda NAND"
 fi
+cp -f system/bin/toolbox system/bin/wmdsi 2>/dev/null
+sed -i -e '20i dsixda' /system/bin/wmdsi 2>/dev/null
 
 if [ "$cmd_line" == "dsixda NAND" ]
 then
@@ -242,6 +244,68 @@ else
     echo "移除update-script中 /boot 文件夹条目 ..."
     sed -i -e '/copy_dir PACKAGE:boot BOOT:/d' META-INF/com/google/android/update-script
   fi   
+fi
+
+
+
+#
+# Fix entries in update-script for zImage
+#
+grep_zimage=`grep -c "flash_zimage" META-INF/com/google/android/update-script`
+
+if [ -e zImage ]
+then
+
+  if [ $grep_zimage == 0 ]
+  then
+    echo
+    echo "找到zImage."
+    echo "修改 update-script 语法来刷 zImage ..."
+    echo "flash_zimage" >> META-INF/com/google/android/update-script
+    echo
+  fi
+
+  if [ ! -e flash_image ]
+  then
+    echo "添加 flash_image 到 ROM ..."
+    cp ../tools/samsung_files/flash_image .
+  fi
+
+elif [ $grep_zimage != 0 ]
+then
+  echo
+  echo "移除 update-script 中 zImage 的条目..."
+  sed -i -e '/flash_zimage/d' META-INF/com/google/android/update-script
+fi
+
+
+#
+# Fix entries in update-script for modem.bin
+#
+grep_modem=`grep -c "flash_modem" META-INF/com/google/android/update-script`
+
+if [ -e modem.bin ]
+then
+  if [ $grep_modem == 0 ]
+  then
+    echo
+    echo "找到modem.bin."
+    echo "修改 update-script 的语法来刷 modem.bin ..."
+    echo "flash_modem" >> META-INF/com/google/android/update-script
+    echo
+  fi
+
+  if [ ! -e flash_image ]
+  then
+    echo "添加 flash_image 到 ROM ..."
+    cp ../tools/samsung_files/flash_image .
+  fi
+
+elif [ $grep_modem != 0 ]
+then
+  echo
+  echo "移除 update-script 中 modem.bin的条目 ..."
+  sed -i -e '/flash_modem/d' META-INF/com/google/android/update-script
 fi
 
 
@@ -343,6 +407,7 @@ else
   cd ..
 fi
 
+
 scripts/fix_update_script_blanks
 cd WORKING_*
 
@@ -357,7 +422,6 @@ then
 fi
 
 echo
-
 
 cd ..
 

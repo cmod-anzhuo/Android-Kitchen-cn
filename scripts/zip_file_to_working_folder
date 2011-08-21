@@ -111,7 +111,39 @@ then
     cd ..
     exit 1
   fi
+
+
+# Check for Samsung stock ROM
+else
+
+  if [ -e factoryfs.img ]
+  then
+    echo "找到 factoryfs.img"
+
+    if [ -e cache.img ]
+    then
+      echo "找到 cache.img"
+    else
+      echo "警告: 未找到 cache.img"
+    fi
+
+    if [ -e zImage ]
+    then
+      echo "找到 zImage"
+      cd ..
+      scripts/show_rooted_kernel_msg
+      cd $build_dir
+    else
+      echo "警告:未找到 zImage"
+    fi
+
+    cd ..
+    scripts/simg_files_to_working_folder no_create $2
+    exit $?
+  fi
+
 fi
+
 
 
 if [ -d patch ]

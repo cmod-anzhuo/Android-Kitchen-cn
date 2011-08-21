@@ -8,6 +8,16 @@
 #
 ############################################################################
 
+clear
+scripts/check_galaxy_s
+
+if [ "$?" == "1" ]
+then
+  echo
+  echo "这个ROM不被支持"
+  exit 0
+fi
+
 scripts/ensure_boot_extracted
 
 if [ -d BOOT-EXTRACTED ]

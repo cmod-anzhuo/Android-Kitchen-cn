@@ -21,6 +21,10 @@ then
   exit 0
 fi
 
+scripts/check_galaxy_s
+sgs=$?
+
+
 echo
 echo "添加root权限"
 echo "--------------------------------------------"
@@ -29,7 +33,11 @@ echo "为添加root权限，会执行以下操作："
 echo
 echo "- 添加 Superuser.apk 和 su"
 echo "- 在 update-script 中添加必要的行"
-echo "- 更新 ramdisk 中的 default.prop"
+
+if [ "$sgs" == "0" ]
+then
+  echo "- 更新 ramdisk 中的 default.prop"
+fi
 echo 
 echo "--------------------------------------------"
 echo
@@ -132,8 +140,11 @@ cd ../..
 
 
 scripts/add_su_to_update_script
-scripts/do_root_boot_img
 
+if [ "$sgs" == "0" ]
+then
+  scripts/do_root_boot_img
+fi
 
 echo 
 echo "添加root权限完成"

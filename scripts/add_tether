@@ -143,6 +143,7 @@ else
   scripts/add_data_app dont_ask
   cd WORKING_*
 
+  echo
   echo "正在复制软件 ..."
   cp -v ../tools/apps/$tether_file data/app/
   cd ..
