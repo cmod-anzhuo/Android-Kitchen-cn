@@ -1,0 +1,67 @@
+############################################################################
+#
+# Copyright (c) 2010-2011 dsixda - dislam@rocketmail.com
+#
+# Android Kitchen is 100% free.  This script file is intended for personal
+# and/or educational use only.  It may not be duplicated for monetary
+# benefit or any other purpose without the permission of the developer.
+#
+############################################################################
+
+
+img_dir=$1
+img_file=$2
+
+dos_path=`cygpath -wp $img_dir`
+
+echo 
+echo "#####################################################################"
+echo 
+echo " 在从$img_file提取文件前请先阅读说明:"
+echo 
+echo " 1) 确保你已安装DiskInternals Linux Reader, 可在"
+echo "    tools/diskinternals_windows/Linux_Reader.exe里找到"
+echo 
+echo " 2) 启动 Linux Reader 并使用 'Drives->Mount Image' 来挂载:"
+echo "    $dos_path\\$img_file"
+echo
+echo " 3) 在Linux Reader explorer, 双击 'Linux native Volume 1' 以便image's文件夹立即显示"
+echo
+
+if [ "$img_file" == "ext4_cache.img" ]
+then
+  echo " 4) 打开 'recovery' 文件夹以便sec_csc.zip显示"
+  echo
+  echo " 5) 右键点击sec_csc.zip, 选择'Save' 并点击'Next'."
+  echo
+  echo " 6) 不选择 'Save directory structure' 选框和选择文件夹"
+  echo "    $dos_path"
+
+else
+  echo " 4) 右键点击这些文件夹并选择'Select All'"
+  echo 
+  echo " 5) 再一次右键点击和选择'Save'.  点击'Next'"
+  echo
+  echo " 6) 点选'Save directory structure'并选择文件夹"
+  echo "    $dos_path"
+fi
+
+echo
+echo "    注意: 程序将显示最后使用路径如果你不改变文件夹"
+echo "          因此确保就工作目录没有使用!"
+echo
+echo " 7) 点击'Next'两次, 等待提取完成然后关闭Linux Reader"
+echo      
+echo "注意: 程序添加管理员所有权来提取文件,所以厨房 -也许- 后面会有移动或删除你的"
+echo "      ROM工作目录的问题 (除非你手动控制窗口资源管理器)!"
+echo      
+echo "#####################################################################"
+echo
+
+echo 
+echo ">>>> 请确定在按回车键之前完成了以上的操作!  <<<<"
+echo
+
+scripts/press_enter
+
+
