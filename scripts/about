@@ -40,7 +40,7 @@ echo
 echo "正在检查更新 ..."
 
 notes=`scripts/get_latest_notes`
-latest_ver=`echo $notes | sed -e 's/.*Version[ ]*\([0-9]*.[0-9]*\) .*/\1/g' -e 's/[ ]*//g'`
+latest_ver=`echo $notes | sed -e 's/.*Version[ ]*\([0-9]*.[0-9]*\) (.*/\1/g' -e 's/[ ]*//g'`
 
 if [ "$latest_ver" == "" ]
 then
