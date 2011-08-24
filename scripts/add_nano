@@ -11,21 +11,15 @@
 
 clear
 
-scripts/check_galaxy_s
-
-if [ "$?" == "1" ]
-then
-  echo
-  echo "不支持这个ROM"
-  exit 0
-fi
-
 echo
 echo "----------------------------------------------------------------"
 echo  
 echo "Nano 是一个文本编辑器，你可以通过在你的电脑上使用 adb 命令"
 echo "行工具或者你的 Android 设备上的终端仿真器(例如ConnectBot)"
 echo "来运行它。如要在一个 shell 中运行它，请输入：nano"
+echo
+echo "脚本 'sysrw' 和 'sysro' 将包括使其在root下更简单的挂载"
+echo " /system 文件夹 (读写或只读)来起到修改文件的目的"
 echo
 echo "----------------------------------------------------------------"
 echo
@@ -40,83 +34,136 @@ fi
 
 echo 
 
-scripts/ensure_boot_extracted
+scripts/add_busybox no_clear
+res=$?
 
-if [ -d BOOT-EXTRACTED ]
+if [ "$res" == "1" ]
 then
-  if [ -d WORKING_* ]
-  then
-
-    if [ -d BOOT-EXTRACTED/boot.img-ramdisk ]
-    then
-      cd BOOT-EXTRACTED/boot.img-ramdisk
-    else
-      echo "错误：未找到 BOOT-EXTRACTED/boot.img-ramdisk 文件夹！"
-      exit 0
-    fi
-
-  else
-    exit 0
-  fi
-else
   exit 0
 fi
 
-echo
 
-if [ `grep -c TERMINFO init.rc` == 1 ]
-then
-  echo "init.rc 中已定义了 TERMINFO"
-  cd ../..
-  rm -rf BOOT-EXTRACTED
+#
+# sysro/sysrw require busybox to mount
+# The regular 'mount' doesn't work for all devices
+#
 
-else
-  echo "正在为 init.rc 设置 TERMINFO ..."
-  perl -pi -e 's/    export PATH /    export TERMINFO \/system\/etc\/terminfo\n    export PATH /g' init.rc
-
-  if [ -e init.rc.bak ]
-  then
-    rm -f init.rc.bak
-  fi
-
-  if [ "`grep TERMINFO init.rc`" == "" ]
-  then
-    echo "错误：无法更新 init.rc！"
-    cd ../..
-    rm -rf BOOT-EXTRACTED
-    exit 0
-  fi
-
-  cd ../..
-  scripts/build_boot_img
-
-  echo
-  echo "正在添加 /system/etc/terminfo ..."
-  echo
-
-  cd WORKING_*
-  mkdir -p system/etc/terminfo
-  cp ../tools/nano_files/terminfo.zip system/etc/terminfo/
-  cd system/etc/terminfo
-  unzip terminfo.zip
-  rm terminfo.zip
-  cd ../../../..
-fi
-
-
+scripts/convert_to_unix tools/nano_files/sysrw
+scripts/convert_to_unix tools/nano_files/sysro
 
 cd WORKING_*
 echo
 
-nano_path=`find . -name nano`
-if [ "$nano_path" == "" ] 
+sys_path=`find . -name sysrw`
+if [ "$sys_path" == "" ] 
 then
-  echo "Adding /system/xbin/nano"
-  cp ../tools/nano_files/nano system/xbin/
+  cp -fv ../tools/nano_files/sysrw system/xbin/
 else 
-  echo "已找到 $nano_path"
+  echo "找到 $sys_path"
+fi
+
+sys_path=`find . -name sysro`
+if [ "$sys_path" == "" ] 
+then
+  cp -fv ../tools/nano_files/sysro system/xbin/ 
+else 
+  echo "找到 $sys_path"
 fi
 
 cd ..
-scripts/add_nano_to_update_script
+echo
+scripts/add_sysrorw_to_update_script
+
+
+scripts/check_galaxy_s
+
+if [ "$?" == "1" ]
+then
+  echo
+  echo "厨房不支持这个rom使用Nano"
+
+else
+  scripts/ensure_boot_extracted
+
+  if [ -d BOOT-EXTRACTED ]
+  then
+    if [ -d WORKING_* ]
+    then
+
+      if [ -d BOOT-EXTRACTED/boot.img-ramdisk ]
+      then
+        cd BOOT-EXTRACTED/boot.img-ramdisk
+      else
+        echo "错误：未找到 BOOT-EXTRACTED/boot.img-ramdisk 文件夹！"
+        exit 0
+      fi
+
+    else
+      exit 0
+    fi
+  else
+    exit 0
+  fi
+
+  echo
+
+  if [ `grep -c TERMINFO init.rc` == 1 ]
+  then
+    echo "init.rc 中已定义了 TERMINFO"
+    cd ../..
+    rm -rf BOOT-EXTRACTED
+
+  else
+    echo "正在为 init.rc 设置 TERMINFO ..."
+    perl -pi -e 's/    export PATH /    export TERMINFO \/system\/etc\/terminfo\n    export PATH /g' init.rc
+
+    if [ -e init.rc.bak ]
+    then
+      rm -f init.rc.bak
+    fi
+
+    if [ "`grep TERMINFO init.rc`" == "" ]
+    then
+      echo "错误：无法更新 init.rc！"
+      cd ../..
+      rm -rf BOOT-EXTRACTED
+      exit 0
+    fi
+
+    cd ../..
+    scripts/build_boot_img
+
+    echo
+    echo "正在添加 /system/etc/terminfo ..."
+    echo
+
+    cd WORKING_*
+    mkdir -p system/etc/terminfo
+    cp ../tools/nano_files/terminfo.zip system/etc/terminfo/
+    cd system/etc/terminfo
+    unzip terminfo.zip
+    rm terminfo.zip
+    cd ../../../..
+  fi
+
+
+  cd WORKING_*
+  echo
+
+  nano_path=`find . -name nano`
+  if [ "$nano_path" == "" ] 
+  then
+    echo
+    cp -fv ../tools/nano_files/nano system/xbin/
+    
+  else 
+    echo "已找到 $nano_path"
+  fi
+
+  cd ..
+  scripts/add_nano_to_update_script
+
+fi
+
+scripts/fix_update_script_blanks
 

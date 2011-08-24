@@ -36,7 +36,20 @@ else
 fi
 
 
-scripts/ensure_boot_extracted
+#
+# Check if Samsung Galaxy S2 or equivalent
+#
+
+scripts/check_galaxy_s
+is_galaxy_s=$?
+
+if [ "$is_galaxy_s" == "1" ]
+then
+  scripts/extract_initramfs
+else
+  scripts/ensure_boot_extracted
+fi
+
 
 if [ ! -d BOOT-EXTRACTED ] 
 then
@@ -49,14 +62,6 @@ clear
 echo
 echo -n "请稍等 "
 
-
-#
-# Check if Samsung Galaxy S2 or equivalent
-#
-
-echo -n "."
-scripts/check_galaxy_s
-is_galaxy_s=$?
 
 
 #
@@ -125,28 +130,22 @@ fi
 
 cd ..
 
-if [ -e BOOT-EXTRACTED/boot.img-ramdisk/default.prop ]
+if [ ! -e BOOT-EXTRACTED/boot.img-ramdisk/default.prop ]
 then
-  cd BOOT-EXTRACTED/boot.img-ramdisk
+  unsecure_status=UNKNOWN
 else
-  echo "错误：未找到 BOOT-EXTRACTED/boot.img-ramdisk/default.prop！"
-  rm -rf BOOT-EXTRACTED
-  exit 0
+  grep_root=`grep -m 1 ro.secure BOOT-EXTRACTED/boot.img-ramdisk/default.prop`
+
+  if [ "$grep_root" == "ro.secure=1" ] 
+  then
+    unsecure_status=无
+  elif [ "$grep_root" == "ro.secure=0" ]
+  then
+    unsecure_status=有
+  else
+    unsecure_status=未知
+  fi
 fi
-
-grep_root=`grep -m 1 ro.secure default.prop`
-
-if [ "$grep_root" == "ro.secure=1" ] 
-then
-  unsecure_status="无"
-elif [ "$grep_root" == "ro.secure=0" ]
-then
-  unsecure_status="有"
-else
-  unsecure_status="未知"
-fi
-
-cd ../..
 
 
 
@@ -407,22 +406,8 @@ cd ../../../../..
 
 echo -n "."
 
-if [ "$is_galaxy_s" == "1" ]
+if [ -e BOOT-EXTRACTED/boot.img-ramdisk ]
 then
-  
-  cd WORKING_*
-  test_initd=`grep -c "set_perm.*SYSTEM:etc/init.d" META-INF/com/google/android/update-script`
-  cd ..
-
-  if [ $test_initd == 0 ]
-  then
-    runparts_status=NO
-  else
-    runparts_status=YES
-  fi
-
-else
-
   cd BOOT-EXTRACTED/boot.img-ramdisk
 
   test_start=`grep -c "start sysinit" init.rc`
@@ -430,15 +415,15 @@ else
 
   if [[ "$test_start" == "0" || "$test_service" == "0" ]] 
   then
-    runparts_status=否
+    runparts_status=NO
   else
-    runparts_status=是
+    runparts_status=YES
   fi
 
   cd ../..
+else
+  runparts_status=UNKNOWN
 fi
-
-
 
 
 clear
@@ -457,12 +442,7 @@ then
 fi
 
 echo " Root权限 (Superuser.apk + su)   : $su_status"
-
-if [ "$is_galaxy_s" == "0" ]
-then
   echo " Root权限 (解锁的 boot.img)      : $unsecure_status"
-fi
-
 echo " 已安装BusyBox                   : $bb_status"
 echo " BusyBox run-parts 支持          : $runparts_status"
 echo " 启用了Apps2SD(app2ext)          : $apps2sd_status" 

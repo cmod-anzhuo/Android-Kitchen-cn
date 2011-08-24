@@ -19,7 +19,7 @@ then
 
   if [ "$1" != "updater-script" ] && [ "$1" != "update-script" ]
   then
-    echo "错误: 指定的 '$1' 代替 updater-script 或 update-script"
+    echo "Error: Specified '$1' instead of updater-script or update-script"
     exit 1
   fi
 

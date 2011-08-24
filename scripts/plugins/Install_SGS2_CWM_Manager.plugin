@@ -3,16 +3,13 @@ echo
 echo "SGS2 ClockworkMod Manager by Chainfire"
 echo "--------------------------------------"
 echo
-echo "This script will install the ClockworkMod Manager app for the"
-echo "Samsung Galaxy S2.  This is required if you need the custom"
-echo "recovery menu and you are not using the CF-Root zImage (which"
-echo "would have installed the app automatically)."
+echo "这个脚本将安装ClockworkMod Manager软件到Samsung Galaxy S2.
+echo "这个必须你使用自定义的recovery菜单和没有使用CF-Root zImage"
 echo
-echo "NOTE: You'll still need a custom/rooted kernel for this app"
-echo "to run."
+echo "注意: 你仍然需要一个custom/rooted内核来运行这个软件."
 echo
 
-echo -n "Proceed (y/n)? (default: y): "
+echo -n "继续操作 (y/n)? (默认: y): "
 read do_cwm
 echo
 
@@ -25,10 +22,10 @@ fi
 if [ -d WORKING_* ]
 then
   echo
-  echo Working folder found
+  echo 发现工作目录
 else
   echo
-  echo Working folder not found, you will need to create one!
+  echo 未发现工作目录,你需要创建一个!
   exit 0
 fi
 
@@ -36,7 +33,7 @@ fi
 scripts/check_galaxy_s
 if [ "$?" != "1" ]
 then
-  echo "Error: ROM is not compatible"
+  echo "错误: ROM不兼容"
   exit 0
 fi
 
@@ -48,7 +45,7 @@ cd WORKING_*
 res=`find . -name $cwm_file`
 if [ "$res" != "" ]
 then
-  echo "$res already found"
+  echo "已找到$res "
   cd ..
   exit 0
 fi
@@ -58,9 +55,9 @@ scripts/add_data_app dont_ask
 cd WORKING_*
 
 echo
-echo "Copying app ..."
+echo "复制软件 ..."
 cp -v ../tools/samsung_files/sgs2_cwm/$cwm_file data/app/
 cd ..
 
 echo 
-echo "Done"
+echo "完成"

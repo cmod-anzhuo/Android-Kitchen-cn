@@ -9,7 +9,7 @@ echo "comes in a file called 'sec_csc.zip' which contains location and"
 echo "carrier-specific configurations and software."
 echo
 
-echo -n "Proceed (y/n)? (default: y): "
+echo -n "继续操作 (y/n)? (默认: y): "
 read do_csc
 echo
 
@@ -22,11 +22,11 @@ date_str=`date '+%m%d%y_%H%M%S'`
 csc_dir=csc_$date_str
 
 echo
-echo "Creating folder `pwd`/$csc_dir ..."
+echo "创建文件夹 `pwd`/$csc_dir ..."
 mkdir $csc_dir
 
 echo
-echo "---> Place stock cache.img into the folder mentioned above <--"
+echo "---> 请把原始cache.img放到上述文件夹 <--"
 
 scripts/press_enter
 
@@ -47,10 +47,10 @@ then
 
   if [ -e ../tools/samsung_files/simg2img_files/$simg2img_file ]
   then
-    echo "Found $simg2img_file"
+    echo "发现 $simg2img_file"
     cd ..
   else
-    echo "Compiling simg2img ..."
+    echo "编译 simg2img ..."
 
     cd ../tools/samsung_files/simg2img_files
     gcc -c sparse_crc32.c
@@ -60,9 +60,9 @@ then
 
     if [ -e tools/samsung_files/simg2img_files/$simg2img_file ]
     then
-      echo "$simg2img_file successfully compiled"
+      echo "$simg2img_file编译成功"
     else
-      echo "Error: $simg2img_file not successfully compiled!"
+      echo "错误: $simg2img_file编译不成功!"
       rm -rfv $csc_dir
       exit 1
     fi    
@@ -75,13 +75,13 @@ then
   # Convert to ext4
   #
 
-  echo "Unpacking cache.img into ext4 format ..."
+  echo "解开cache.img为ext4格式 ..."
   tools/samsung_files/simg2img_files/simg2img $csc_dir/cache.img \
     $csc_dir/ext4_cache.img
     
   if [ ! -e $csc_dir/ext4_cache.img ]
   then
-    echo "Unable to unpack cache.img!"
+    echo "无法解开 cache.img!"
     exit 1
   fi
 
@@ -94,7 +94,7 @@ then
   if [ `uname | grep CYGWIN` ]
   then
     echo
-    echo "File is now in ext4 format.  Now we need to unpack the sec_csc.zip."
+    echo "文件现在是 ext4 格式. 现在我们需要解开sec_csc.zip."
     scripts/press_enter
     scripts/show_linux_reader $csc_dir ext4_cache.img
   else
@@ -105,29 +105,29 @@ then
   if [ "$?" == "1" ]
   then
     echo
-    echo "WARNING: ext4_cache.img is in use.  Remove file manually after application is closed."
+    echo "警告: ext4_cache.img 正在使用中。 应用程序关闭后手动移除文件."
     echo
   fi
 
   if [ ! -e $csc_dir/sec_csc.zip ]
   then
-    echo "WARNING: sec_csc.zip not found!"
+    echo "警告:未发现sec_csc.zip!"
     exit 1
   else
     echo
-    echo "Finished!  Your file is at $csc_dir/sec_csc.zip."
+    echo "完成! 你的文件存在于 $csc_dir/sec_csc.zip."
     echo
-    echo "You can unzip this file and copy the contents of the 'system'"
-    echo "folder to your ROM's system folder."
+    echo "你可以解压缩这个文件和复制内容到你rom文件夹中的'system'"
+    echo "文件夹"
     echo
     exit 0
   fi
 
 else
-  echo "Error: cache.img not found!"
+  echo "错误:未发现 cache.img!"
   echo
   cd ..
-  echo "Removing $csc_dir folder"
+  echo "移除 $csc_dir 文件夹"
   rm -rf csc_dir
   exit 1
 fi

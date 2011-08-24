@@ -182,8 +182,7 @@ do
             if [ $version==older ]
             then
               echo
-              echo "恢复新版baksmali/smali:"
-              ls ../../../tools/deodex_files/*.jar | sed -e 's/.*\///g'
+              echo "--> 恢复新版baksmali/smali ($new_version)"
               echo
               version=newer
               version_num=$new_version

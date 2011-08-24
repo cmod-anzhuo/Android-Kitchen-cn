@@ -17,16 +17,16 @@ dos_path=`cygpath -wp $img_dir`
 echo
 echo "####################################################################"
 echo 
-echo " �밴�������˵�������ļ��� $img_file ����ȡ������"
+echo " 请按照下面的说明来将文件从 $img_file 中提取出来："
 echo 
-echo " 1) ��Explore2fs����, ʹ��'File->Open Image' ����:"
+echo " 1) 当Explore2fs出现, 使用'File->Open Image' 来打开:"
 echo "    $dos_path\\$img_file"
 echo
-echo " 2) �ڼ��غ��Ҽ���������е�Ӳ��ͼ�꣬Ȼ��ѡ��Export Directory"
+echo " 2) 在加载后，右键点击左侧框中的硬盘图标，然后选择Export Directory"
 echo
-echo " 3) ѡ�� $dos_path"
+echo " 3) 选择 $dos_path"
 echo
-echo " 4) �ȴ���ȡ��ɣ�Ȼ��ر� Explore2fs"
+echo " 4) 等待提取完成，然后关闭 Explore2fs"
 echo
 echo "####################################################################"
 echo
@@ -34,7 +34,7 @@ echo
 tools/explore2fs_windows/explore2fs.exe &
 
 echo 
-echo ">>>> ��ȷ���ڰ��س���֮ǰ��������ϵĲ���! <<<<"
+echo ">>>> 请确定在按回车键之前完成了以上的操作! <<<<"
 echo
 
 scripts/press_enter

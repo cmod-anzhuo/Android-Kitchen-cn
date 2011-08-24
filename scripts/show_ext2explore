@@ -17,18 +17,18 @@ dos_path=`cygpath -wp $img_dir`
 echo 
 echo "#####################################################################"
 echo 
-echo " �밴�������˵�������ļ��� $img_file ����ȡ������"
+echo " 请按照下面的说明来将文件从 $img_file 中提取出来："
 echo 
-echo " 1) ���� 'Cannot Read Disk' ������ʾ (�� 'OK') �����������ʾ�Ļ���"
+echo " 1) 忽略 'Cannot Read Disk' 错误提示 (按 'OK') ，如果出现提示的话。"
 echo 
-echo " 2) ����Ext2Explore,ʹ��'File->Open Image' ����:"
+echo " 2) 运行Ext2Explore,使用'File->Open Image' 来打开:"
 echo "    $dos_path\\$img_file"
 echo
-echo " 3) �ڼ��غ��Ҽ���������е�Ӳ��ͼ�꣬Ȼ��ѡ�� Export Directory"
+echo " 3) 在加载后，右键点击左侧框中的硬盘图标，然后选择 Export Directory"
 echo
-echo " 4) ѡ�� $dos_path"
+echo " 4) 选择 $dos_path"
 echo
-echo " 5) �ȴ���ȡ��ɣ�Ȼ��ر� Explore2fs"
+echo " 5) 等待提取完成，然后关闭 Explore2fs"
 echo
 echo "#####################################################################"
 echo
@@ -36,7 +36,7 @@ echo
 tools/ext2read_windows/ext2explore.exe &
 
 echo 
-echo ">>>> ��ȷ���ڰ��س���֮ǰ��������ϵĲ���! <<<<"
+echo ">>>> 请确定在按回车键之前完成了以上的操作! <<<<"
 echo
 
 scripts/press_enter

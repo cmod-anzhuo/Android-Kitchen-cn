@@ -68,9 +68,19 @@ then
       echo
       echo "正在解压内核 ..."
       ./extract-kernel.pl boot.img 2>/dev/null
+     
+      if [ ! -e zImage ]
+      then
+        echo "错误:未发现 zImage!"
+      fi
 
       echo "正在解压 ramdisk ..." 
       ./extract-ramdisk.pl boot.img 2>/dev/null
+
+      if [ ! -d boot.img-ramdisk ]
+      then
+        echo "错误:未发现ramdisk文件夹!"
+      fi
 
       rm boot.img
       rm extract-*.pl

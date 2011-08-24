@@ -22,7 +22,7 @@ then
 
   if [ ! -e $build_dir/factoryfs.img ]
   then
-    echo "´íÎó: Î´ÕÒµ½ $build_dir/factoryfs.img !"
+    echo "é”™è¯¯: æœªæ‰¾åˆ° $build_dir/factoryfs.img !"
     exit 1
   fi
 
@@ -34,7 +34,7 @@ then
     mv $build_dir/cache.img $build_dir/system
   else
     echo
-    echo "¾¯¸æ: Î´ÕÒµ½cache.img.Äã¿ÉÒÔÊ¹ÓÃ³ø·¿¸ß¼¶²Ëµ¥ÖĞµÄ²å¼ş½Å±¾½â¿ªÒ»¸öcache.img"
+    echo "è­¦å‘Š: æœªæ‰¾åˆ°cache.img.ä½ å¯ä»¥ä½¿ç”¨å¨æˆ¿é«˜çº§èœå•ä¸­çš„æ’ä»¶è„šæœ¬è§£å¼€ä¸€ä¸ªcache.img"
     echo
   fi
 
@@ -49,25 +49,25 @@ else
   #
   if [ -e original_update/factoryfs.img ]
   then
-    echo "·¢ÏÖ original_update/factoryfs.img"
+    echo "å‘ç° original_update/factoryfs.img"
 
     if [ -e original_update/cache.img ]
     then
-      echo "·¢ÏÖ original_update/cache.img"
+      echo "å‘ç° original_update/cache.img"
     else
       echo
-      echo "¾¯¸æ: Î´ÕÒµ½original_update/cache.img. Äã¿ÉÒÔÔËĞĞ³ø·¿¸ß¼¶²Ëµ¥ÖĞµÄ²å¼ş½Å±¾½â¿ªÒ»¸öcache.img "
+      echo "è­¦å‘Š: æœªæ‰¾åˆ°original_update/cache.img. ä½ å¯ä»¥è¿è¡Œå¨æˆ¿é«˜çº§èœå•ä¸­çš„æ’ä»¶è„šæœ¬è§£å¼€ä¸€ä¸ªcache.img "
       echo
     fi
   else
 
     if [ -e original_update/cache.img ]
     then
-      echo "ÕÒµ½ original_update/cache.img"
-      echo "´íÎó:Î´ÕÒµ½original_update/factoryfs.img"
+      echo "æ‰¾åˆ° original_update/cache.img"
+      echo "é”™è¯¯:æœªæ‰¾åˆ°original_update/factoryfs.img"
     else
       echo
-      echo "´íÎó:Î´ÔÚoriginal_update folderÏÂÕÒµ½rom!"
+      echo "é”™è¯¯:æœªåœ¨original_update folderä¸‹æ‰¾åˆ°rom!"
     fi
 
     exit 1
@@ -75,10 +75,10 @@ else
 
   if [ -e original_update/zImage ]
   then
-    echo "ÕÒµ½ original_update/zImage"
+    echo "æ‰¾åˆ° original_update/zImage"
     scripts/show_rooted_kernel_msg
   else
-    echo "¾¯¸æ: Î´ÕÒµ½original_update/zImage"
+    echo "è­¦å‘Š: æœªæ‰¾åˆ°original_update/zImage"
   fi
 
 
@@ -88,14 +88,14 @@ else
   build_dir=`scripts/set_working_folder_name $2`
 
   echo
-  echo "´´½¨¹¤×÷Ä¿Â¼ $build_dir ..."
+  echo "åˆ›å»ºå·¥ä½œç›®å½• $build_dir ..."
   mkdir $build_dir
   mkdir $build_dir/system
 
   # Kernel is optional
   if [ -e original_update/zImage ]
   then
-    echo ¸´ÖÆ zImage ...
+    echo å¤åˆ¶ zImage ...
     cp original_update/zImage $build_dir
   fi
 
@@ -116,9 +116,9 @@ fi
 
 if [ -e tools/samsung_files/simg2img_files/$simg2img_file ]
 then
-  echo "ÕÒµ½ $simg2img_file"
+  echo "æ‰¾åˆ° $simg2img_file"
 else
-  echo "±àÒë simg2img ..."
+  echo "ç¼–è¯‘ simg2img ..."
 
   cd tools/samsung_files/simg2img_files
   gcc -c sparse_crc32.c
@@ -128,9 +128,9 @@ else
 
   if [ -e tools/samsung_files/simg2img_files/$simg2img_file ]
   then
-    echo "$simg2img_file ³É¹¦±àÒë"
+    echo "$simg2img_file æˆåŠŸç¼–è¯‘"
   else
-    echo "´íÎó: $simg2img_file ±àÒëÊ§°Ü!"
+    echo "é”™è¯¯: $simg2img_file ç¼–è¯‘å¤±è´¥!"
     exit 1
   fi    
 fi
@@ -158,13 +158,13 @@ cd ../..
 #
 
 echo
-echo "½â¿ª factoryfs.img Îª ext4 ¸ñÊ½ ..."
+echo "è§£å¼€ factoryfs.img ä¸º ext4 æ ¼å¼ ..."
 tools/samsung_files/simg2img_files/simg2img $src_dir/factoryfs.img \
   $system_dir/ext4_factoryfs.img
 
 if [ ! -e $system_dir/ext4_factoryfs.img ]
 then
-  echo "ÎŞ·¨½â¿ª factoryfs.img!"
+  echo "æ— æ³•è§£å¼€ factoryfs.img!"
   exit 1
 fi
 
@@ -178,7 +178,7 @@ rm -rf $system_dir/factoryfs.img
 
 mkdir -p $build_dir/META-INF/com/google/android
 echo
-echo "Ìí¼Óupdate-script ..."
+echo "æ·»åŠ update-script ..."
 cp tools/update_files/update-script $build_dir/META-INF/com/google/android/
 
 
@@ -200,7 +200,7 @@ rm -f ext4_factoryfs.img 2>/dev/null
 if [ "$?" == "1" ]
 then
   echo
-  echo "¾¯¸æ: ext4_factoryfs.imgÕıÔÚÊ¹ÓÃÖĞ.  ÔÚÓ¦ÓÃ³ÌĞò¹Ø±ÕºóÊÖ¶¯ÒÆ³ıÎÄ¼ş."
+  echo "è­¦å‘Š: ext4_factoryfs.imgæ­£åœ¨ä½¿ç”¨ä¸­.  åœ¨åº”ç”¨ç¨‹åºå…³é—­åæ‰‹åŠ¨ç§»é™¤æ–‡ä»¶."
   echo
 fi
 
@@ -209,28 +209,28 @@ cd ..
 if [ ! -d system ]
 then
   echo
-  echo "´íÎó:  Î´·¢ÏÖ /system ÎÄ¼ş¼Ğ!"
+  echo "é”™è¯¯:  æœªå‘ç° /system æ–‡ä»¶å¤¹!"
   exit 1
 fi
 
 if [ ! -d system/framework ]
 then
   echo
-  echo "´íÎó: Î´·¢ÏÖ /system/framework ÎÄ¼ş¼Ğ!"
+  echo "é”™è¯¯: æœªå‘ç° /system/framework æ–‡ä»¶å¤¹!"
   exit 1
 fi
 
 if [ ! -d system/app ]
 then
   echo
-  echo "´íÎó: Î´·¢ÏÖ /system/app ÎÄ¼ş¼Ğ!"
+  echo "é”™è¯¯: æœªå‘ç° /system/app æ–‡ä»¶å¤¹!"
   exit 1
 fi
 
 if [ "`ls system`" == "" ]
 then
   echo 
-  echo "´íÎó: /systemÎÄ¼ş¼ĞÎª¿Õ!"
+  echo "é”™è¯¯: /systemæ–‡ä»¶å¤¹ä¸ºç©º!"
   echo
   exit 1
 fi
@@ -246,8 +246,8 @@ echo "  $system_dir"
 if [ -e $src_dir/cache.img ]
 then
   echo
-  echo "ÄãÏëÌáÈ¡CSCÂğ£¿"
-  echo -n "´Ócache.imgÌáÈ¡ (y/n)? (Ä¬ÈÏ: y): "
+  echo "ä½ æƒ³æå–CSCå—ï¼Ÿ"
+  echo -n "ä»cache.imgæå– (y/n)? (é»˜è®¤: y): "
 
   read do_extract
   echo
@@ -261,13 +261,13 @@ then
     #
     # Convert cache.img to ext4
     #
-    echo "½â¿ª cache.img µ½ext4¸ñÊ½ ..."
+    echo "è§£å¼€ cache.img åˆ°ext4æ ¼å¼ ..."
     tools/samsung_files/simg2img_files/simg2img $src_dir/cache.img \
       $system_dir/ext4_cache.img
 
     if [ ! -e $system_dir/ext4_cache.img ]
     then
-      echo "ÎŞ·¨½â¿ª cache.img!"
+      echo "æ— æ³•è§£å¼€ cache.img!"
       exit 1
     fi
 
@@ -290,15 +290,15 @@ then
     if [ "$?" == "1" ]
     then
       echo
-      echo "¾¯¸æ: ext4_cache.img ÕıÔÚÊ¹ÓÃ. Ó¦ÓÃ³ÌĞòÍË³öºóÊÖ¶¯ÒÆ³ıÎÄ¼ş."
+      echo "è­¦å‘Š: ext4_cache.img æ­£åœ¨ä½¿ç”¨. åº”ç”¨ç¨‹åºé€€å‡ºåæ‰‹åŠ¨ç§»é™¤æ–‡ä»¶."
       echo
     fi
 
     if [ ! -e sec_csc.zip ]
     then
-      echo "¾¯¸æ: Î´·¢ÏÖsec_csc.zip!"
+      echo "è­¦å‘Š: æœªå‘ç°sec_csc.zip!"
     else
-      echo "´Ósec_csc.zipÌáÈ¡±ØĞèµÄÎÄ¼ş ..."
+      echo "ä»sec_csc.zipæå–å¿…éœ€çš„æ–‡ä»¶ ..."
       unzip -q sec_csc.zip -d temp_csc
 
       # 
@@ -308,10 +308,10 @@ then
       if [ -d temp_csc/system/app ]
       then
         echo
-        echo "ÕâĞ©ÊÂsec_csc.zipÀïÕÒµ½µÄÈí¼ş:"
+        echo "è¿™äº›äº‹sec_csc.zipé‡Œæ‰¾åˆ°çš„è½¯ä»¶:"
         ls temp_csc/system/app
         echo
-        echo -n "¸´ÖÆÈí¼şµ½ÄãµÄ¹¤×÷Ä¿Â¼ (y/n)? (Ä¬ÈÏ: n): "
+        echo -n "å¤åˆ¶è½¯ä»¶åˆ°ä½ çš„å·¥ä½œç›®å½• (y/n)? (é»˜è®¤: n): "
 
         read do_copy
         echo
@@ -331,7 +331,7 @@ then
     if [ "$?" == "1" ]
     then
       echo
-      echo "¾¯¸æ: sec_csc.zip ÕıÔÚÊ¹ÓÃ. ÊÖ¶¯ÒÆ³ıÎÄ¼ş."
+      echo "è­¦å‘Š: sec_csc.zip æ­£åœ¨ä½¿ç”¨. æ‰‹åŠ¨ç§»é™¤æ–‡ä»¶."
       echo
     fi
 
@@ -363,10 +363,10 @@ fi
 
 
 echo
-echo  $build_dirÁĞ±í:
+echo  $build_diråˆ—è¡¨:
 echo
 ls -l $build_dir
 
 echo
-echo "¹¤×÷Ä¿Â¼ÉèÖÃÍê³É!"
+echo "å·¥ä½œç›®å½•è®¾ç½®å®Œæˆ!"
 

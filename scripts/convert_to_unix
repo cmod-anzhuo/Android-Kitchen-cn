@@ -8,7 +8,9 @@
 #
 ############################################################################
 
-echo
-echo "注意:确保你使用的是一个解锁的 kernel (zImage),例如 CF-Root, 允许"
-echo "刷入自定义的ROM.  如果你决定更换刷一个原始kernel，之后你必须使用Odin来刷入解锁的内核"
-echo
+file_path=$1
+
+cat $file_path | tr -d '\r' > $file_path.temp
+rm -f $file_path
+mv $file_path.temp $file_path
+chmod +x $file_path

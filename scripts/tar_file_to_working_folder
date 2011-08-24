@@ -18,14 +18,14 @@
 
 update_file=$1
  
-echo "Ñ¡Ôñ $update_file"
+echo "é€‰æ‹© $update_file"
 
 # Trim spaces in file name
 update_file2=`echo $update_file | tr ' ' '_'`
 
 if [ "$update_file" != "$update_file2" ]
 then
-  echo "ÖØÃüÃûÎª $update_file2"
+  echo "é‡å‘½åä¸º$update_file2"
   mv "original_update/$update_file" original_update/$update_file2
   update_file=$update_file2
 fi
@@ -41,18 +41,18 @@ build_dir=`scripts/set_working_folder_name $2`
 #
 
 echo
-echo "´´½¨¹¤×÷Ä¿Â¼ $build_dir ..."
+echo "åˆ›å»ºå·¥ä½œç›®å½• $build_dir ..."
 mkdir $build_dir
 
 echo
-echo "ÌáÈ¡ ROM ..."
+echo "æå– ROM ..."
 
 tar xvf original_update/$update_file -C $build_dir -x factoryfs.img cache.img modem.bin zImage
 
 if [ "$?" != "0" ]
 then
   echo
-  echo "´íÎó: ÎŞ·¨ÌáÈ¡ ROM!"
+  echo "é”™è¯¯:ä¸èƒ½æå–ROM!"
   cd ..
   exit 1
 fi
@@ -77,7 +77,7 @@ then
   exit $?
 
 else
-  echo "´íÎó: Ã»ÓĞÔÚTARÑ¹Ëõ°üÖĞ·¢ÏÖimageÎÄ¼ş!"
+  echo "é”™è¯¯:æœªåœ¨TARå‹ç¼©åŒ…ä¸­å‘ç°imageæ–‡ä»¶!"
   echo 
   cd ..
   exit 1
@@ -89,7 +89,7 @@ if [ ! -d system ] && [ ! -d SYSTEM ]
 then
 
   echo
-  echo "´íÎó: Ã»ÓĞ·¢ÏÖsystemÎÄ¼ş¼Ğ!"
+  echo "é”™è¯¯:æœªå‘ç°systemæ–‡ä»¶å¤¹!"
   cd ..
   exit 1
 
@@ -97,7 +97,7 @@ fi
 
 
 echo
-echo "META-INF/com/google/android:ÁĞ±í"
+echo "META-INF/com/google/android:åˆ—è¡¨"
 
 cd WORKING_*
 cd META-INF/com/google/android
@@ -113,18 +113,18 @@ cd ../../../../..
 cd $build_dir
 
 echo
-echo Listing of $build_dir:
+echo $build_diråˆ—è¡¨:
 ls -l 
 
 echo
 
 if [ -d system ]
 then
-  echo "Íê³É¹¤×÷Ä¿Â¼ÉèÖÃ!"
+  echo "è®¾ç½®å·¥ä½œç›®å½•å®Œæˆ!"
   cd ..
 
 else
-  echo "´íÎó: ÉèÖÃÊ§°Ü"
+  echo "é”™è¯¯: è®¾ç½®å¤±è´¥"
   cd ..
   scripts/press_enter
   exit 1

@@ -41,10 +41,10 @@ then
 
 else
   echo
-  echo "Unable to determine offset of kernel (also known as page size) in boot.img."
-  echo "If you are not going to flash this boot.img then just use the default value."
+  echo "无法确定boot.img内核偏移"
+  echo "如果你不去刷这个boot.img请使用默认值."
   echo
-  echo -n "Please enter page size (default=4096): "
+  echo -n "请输入页面大小 (默认=4096): "
   read kernel_offset
   echo
 
