@@ -8,6 +8,10 @@
 #
 ############################################################################
 
+#
+# exit 1 = busybox未建立
+# exit 0 = busybox已存在工作目录
+#
 
 if [ "$1" == "" ]
 then
@@ -79,7 +83,7 @@ then
   fi
 
   cd ..
-  exit 1
+  exit 0
 fi
 
 echo
@@ -111,7 +115,7 @@ then
   if [ "$replace_bb" == "n" ]
   then
     cd ..
-    exit 1
+    exit 0
   fi
 
   echo "替换为 /system/xbin/busybox"
@@ -123,3 +127,5 @@ cp -f ../tools/busybox_files/busybox system/xbin/
 cd ..
 
 scripts/add_busybox_to_update_script
+
+exit 0

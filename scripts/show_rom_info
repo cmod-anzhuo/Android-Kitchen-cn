@@ -40,7 +40,7 @@ fi
 # Check if Samsung Galaxy S2 or equivalent
 #
 
-scripts/check_galaxy_s
+scripts/check_galaxy_sx
 is_galaxy_s=$?
 
 if [ "$is_galaxy_s" == "1" ]
@@ -54,14 +54,12 @@ fi
 if [ ! -d BOOT-EXTRACTED ] 
 then
   echo "未找到BOOT-EXTRACTED文件夹 "
-  exit 0
 fi
 
 
 clear
 echo
 echo -n "请稍等 "
-
 
 
 #
@@ -259,16 +257,15 @@ cd ../../../../..
 #
 
 echo -n "."
-cd WORKING_*
-
-if [ "`find . -name nano`" == "" ] 
+scripts/nano_exists
+res=$?
+if [ "$res" = "0" ] 
 then
   nano_status=无
 else
   nano_status=有
 fi
 
-cd ..
 
 
 

@@ -24,7 +24,7 @@ do
     echo
     echo
     echo
-    echo "欢迎使用HTC安卓厨房"
+    echo "欢迎使用安卓厨房"
     echo
     echo -n "请稍等... "
     for (( count = 0 ; $count <= $i ; count++ ))

@@ -268,15 +268,15 @@ fi
 # Copy the zImage by itself if it's a Galaxy S2 or equivalent
 #
 
-sgs_exists=`echo $my_device | grep -c "GT-I9"`
-if [ $sgs_exists -gt 0 ]
+if [ -e tools/samsung_files/sgs_variants/$my_device ] || \
+    [ -e tools/samsung_files/sgs2_variants/$my_device ]
 then
   echo 
   echo "复制 kernel ..."
   cp -vf MY_KERNEL/zImage WORKING_*/
 else
   cd WORKING_*
-  rm -f modem.bin flash_image
+  rm -f modem.bin flash_image redbend_ua
   cd ..
 fi
 

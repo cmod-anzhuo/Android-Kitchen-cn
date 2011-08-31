@@ -22,7 +22,7 @@ then
   cmd_line="no_console_suspend=0"
 
 else
-  echo "Warning: 厨房没有明确的型号.使用默认值!"
+  echo "警告: 厨房没有明确的型号.使用默认值!"
   kernel_offset=2048
   kernel_base=0x11800000
   cmd_line="no_console_suspend=0"

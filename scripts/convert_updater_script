@@ -14,7 +14,6 @@ then
   clear
 fi
 
-
 echo
 
 base_dir=`pwd`
@@ -104,6 +103,8 @@ echo "- 初步格式化 ..."
 # The 'strings' command is used in case the ui_print statement has special symbols in it
 more updater-script \
   | sed -e ':a;N;$!ba;s/([ ]*\n/(/g' \
+  | sed -e ':a;N;$!ba;s/\n[ ]*\&\&/ \&\&/g' \
+  | sed -e ':a;N;$!ba;s/\n[ ]*||/ ||/g' \
   | sed -e ':a;N;$!ba;s/\n);/);/g' \
   | strings \
   | sed -e ':a;N;$!ba;s/ui_print("[^"]*");//g' \
@@ -138,13 +139,14 @@ sed -i -e '/^run_program("\/sbin\/busybox", "umount"/d' temp.log
 
 
 #
-# For Samsung Galaxy S2 and equivalent
+# For Samsung Galaxy S/S2 and equivalent
 #
 if [ -e ../../../../zImage ] && [ `grep -c boot.img temp.log` == 0 ]
 then
   sed -i \
     -e '/zImage"/d' \
     -e '/flash_image"/d' \
+    -e '/redbend_ua"/d' \
     temp.log
 
   echo "flash_zimage" >> temp.log
@@ -154,7 +156,8 @@ if [ -e ../../../../modem.bin ]
 then
   sed -i \
     -e '/modem.bin"/d' \
-    -e '/flash_bin"/d' \
+    -e '/flash_image"/d' \
+    -e '/redbend_ua"/d' \
     temp.log
 
   echo "flash_modem" >> temp.log
@@ -196,6 +199,19 @@ do
 
   line_num=`sed -n -e '/assert(/{=;q}' temp.log`
 done
+
+
+#
+# Fix the mess left over sometimes by the assert statement
+#
+sed -i \
+  -e 's/^==[ ]*\(.*$\)/\1/g' \
+  -e 's/^||[ ]*\(.*$\)/\1/g' \
+  -e 's/^&&[ ]*\(.*$\)/\1/g' \
+  -e 's/^[^a-z]*\([a-z]*\)/\1/g' \
+  -e '/^ui_print/d' \
+  temp.log
+
 
 
 #

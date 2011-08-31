@@ -75,7 +75,7 @@ echo
 scripts/add_sysrorw_to_update_script
 
 
-scripts/check_galaxy_s
+scripts/check_galaxy_sx
 
 if [ "$?" == "1" ]
 then
@@ -146,21 +146,20 @@ else
     cd ../../../..
   fi
 
-
-  cd WORKING_*
   echo
 
-  nano_path=`find . -name nano`
-  if [ "$nano_path" == "" ] 
+  scripts/nano_exists
+  res=$?
+  
+  if [ "$res" == "0" ] 
   then
-    echo
+    cd WORKING_*
     cp -fv ../tools/nano_files/nano system/xbin/
-    
+    cd ..
   else 
     echo "已找到 $nano_path"
   fi
 
-  cd ..
   scripts/add_nano_to_update_script
 
 fi

@@ -142,7 +142,7 @@ echo "- 初步格式化 ..."
 # which was changed earlier
 #
 cd ../../../../..
-scripts/check_galaxy_s
+scripts/check_galaxy_sx
 res=$?
 cd WORKING_*
 cd META-INF/com/google/android

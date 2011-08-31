@@ -81,19 +81,19 @@ else
   echo
   echo "未在此ROM中找到 /system/media/bootscreen/boot_animation.xml"
 
-  file_list="system/customize/resource/android_audio.mp3 system/media/android_audio.mp3 system/sounds/lgeSounds/PowerOn.mp3"
+  file_list="system/customize/resource/android_audio.mp3 system/media/android_audio.mp3 system/sounds/lgeSounds/PowerOn.mp3 system/etc/PowerOn.wav"
 
-  for mp3 in $file_list 
+  for snd in $file_list 
   do
 
     echo
 
-    if [ -e $mp3 ]
+    if [ -e $snd ]
     then
-      echo "--> 正在重命名 /$mp3"
-      mv $mp3 $mp3.bak
+      echo "--> 正在重命名 /$snd"
+      mv $snd $snd.bak
     else
-      echo "未在此ROM中找到 /$mp3"
+      echo "未在此ROM中找到 /$snd"
     fi
   
   done

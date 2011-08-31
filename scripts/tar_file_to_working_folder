@@ -49,16 +49,7 @@ echo "提取 ROM ..."
 
 tar xvf original_update/$update_file -C $build_dir -x factoryfs.img cache.img modem.bin zImage
 
-if [ "$?" != "0" ]
-then
-  echo
-  echo "错误:不能提取ROM!"
-  cd ..
-  exit 1
-fi
-
 cd $build_dir
-
 
 echo
 
@@ -76,59 +67,39 @@ then
   scripts/simg_files_to_working_folder no_create $2
   exit $?
 
+elif [ -e factoryfs.rfs ]
+then
+
+  if [ -e zImage ]
+  then
+    cd ..
+    scripts/show_rooted_kernel_msg
+    cd $build_dir
+  fi
+
+  cd ..
+  scripts/rfs_files_to_working_folder no_create $2
+  exit $?
+
+elif [ -e PDA.tar ]
+then
+
+  cd ..
+  scripts/sgs_tar_files_to_working_folder no_create $2
+  exit $?
+
+elif [ -e PDA.tar.md5 ]
+then
+
+  cd ..
+  scripts/sgs_tarmd5_files_to_working_folder no_create $2
+  exit $?
+
 else
-  echo "错误:未在TAR压缩包中发现image文件!"
+  echo "错误:未在TAR压缩包里发现image文件!"
   echo 
   cd ..
   exit 1
 fi
 
-
-
-if [ ! -d system ] && [ ! -d SYSTEM ]
-then
-
-  echo
-  echo "错误:未发现system文件夹!"
-  cd ..
-  exit 1
-
-fi
-
-
-echo
-echo "META-INF/com/google/android:列表"
-
-cd WORKING_*
-cd META-INF/com/google/android
-ls -l 
-cd ../../../../..
-
-
-
-#
-# Completion
-#
-
-cd $build_dir
-
-echo
-echo $build_dir列表:
-ls -l 
-
-echo
-
-if [ -d system ]
-then
-  echo "设置工作目录完成!"
-  cd ..
-
-else
-  echo "错误: 设置失败"
-  cd ..
-  scripts/press_enter
-  exit 1
-fi
-
-cd ..
 
