@@ -1,0 +1,225 @@
+
+echo
+echo "编译和反编译一个Deodexed文件夹"
+echo "--------------------------------------"
+echo
+echo "这个脚本将反编译一个de-odexed APK/JAR为他们的smali组件"
+echo "你将需要一个工作目录包含system/app和system/framework子文件夹"
+echo
+
+echo -n "继续操作 (y/n)? (默认: y): "
+read proceed
+echo
+
+if [ "$proceed" == "n" ]
+then
+  exit 0
+fi
+
+
+if [ ! -d WORKING_* ]
+then
+  echo
+  echo 未发现工作目录!
+  exit 0
+fi
+
+orig_folder=`pwd`
+
+echo
+cd WORKING_*
+
+if [ ! -d system/app ]
+then
+  echo "system/app丢失"
+  cd ..
+  exit 0
+fi
+
+if [ ! -d system/framework ]
+then
+  echo "system/framework丢失!"
+  cd ..
+  exit 0
+fi
+
+
+grep1=`find system/framework | grep \\.jar$ | sort -f`
+grep2=`find system/framework | grep \\.apk$ | sort -f`
+grep3=`find system/app | grep \\.jar$ | sort -f`
+grep4=`find system/app | grep \\.apk$ | sort -f`
+
+grep_cmd=`echo $grep1 $grep2 $grep3 $grep4`
+
+if [ "$grep_cmd" == "" ]
+then
+  echo "错误:未找到文件!"
+  cd ..
+  exit 0
+fi
+
+count=0
+
+rm -f ../temp.list
+
+echo >> ../temp.list
+echo "所有文件:" >> ../temp.list
+echo >> ../temp.list
+
+for filename in $grep_cmd 
+do
+
+  # Skip those that are not de-odexed
+  # no_ext=`echo $filename | sed 's/\(.*\/.*\/[a-zA-Z]*\).*/\1/g'`
+  # odex_file="$no_ext.odex"
+  # if [ -e $odex_file ]
+  # then
+  #   continue
+  # fi
+
+  count=$(($count+1))
+
+  # Store file names in an array
+  file_array[$count]=$filename
+  echo "  ($count) $filename" >> ../temp.list
+done
+
+more ../temp.list
+rm -f ../temp.list
+
+echo
+echo -n "输入文件号码 (0 = 取消): "
+
+read enterNumber
+
+if [ "$enterNumber" == "0" ]
+then
+  cd $orig_folder
+  exit 0
+
+# Verify input is a number
+elif [ "`echo $enterNumber | sed 's/[0-9]*//'`" == "" ]
+then
+
+  file_chosen=${file_array[$enterNumber]}
+
+  if [ "$file_chosen" == "" ]
+  then
+    cd $orig_folder
+    exit 0
+  fi
+  
+  echo
+  echo "反编译 $file_chosen ..."
+
+  folder=`echo $file_chosen | sed -e 's/\(.*\/.*\)\/.*/\1/g'`
+  file_chosen=`echo $file_chosen | sed -e 's/.*\/.*\/\(.*\)/\1/g'`
+
+  cd $folder
+  rm -rf out
+  rm -f classes.dex
+
+  version=`more ../../../tools/deodex_files/use_this_version.txt | sed 's/[ ]*$//g'`
+  cp -f ../../../tools/deodex_files/baksmali-$version.jar baksmali.jar
+  cp -f ../../../tools/deodex_files/smali-$version.jar smali.jar
+
+  echo
+  echo "-> 解压缩 $file_chosen classes.dex"
+  echo
+  unzip $file_chosen classes.dex
+
+  if [ ! -e classes.dex ]
+  then
+    echo "错误: 文件未deodexed!"
+    rm -f *smali.jar
+    cd $orig_folder
+    exit 0
+  fi
+
+  echo
+  echo "-> java -Xmx512m -jar baksmali.jar classes.dex"
+  echo
+  java -Xmx512m -jar baksmali.jar classes.dex
+
+  if [ -d out ]
+  then
+    echo
+    echo "$file_chosen已经反编译, 请确认$folder/out文件夹." 
+    echo
+    echo "进行更改适当的smali文件和当其完成后按下回车."
+    echo -n "(回车) "
+    read go_compile
+
+    if [ ! -e classes.dex ]
+    then
+      echo "错误: 未找到classes.dex!"
+      error=1
+    else
+
+      echo
+      echo "制作备份文件 $file_chosen.bak ..."
+      echo
+
+      cp -f $file_chosen $file_chosen.bak
+
+      echo
+      echo "编译$file_chosen ..."
+      echo
+      echo "-> java -Xmx512m -jar smali.jar out -o classes.dex"
+      echo
+      java -Xmx512m -jar smali.jar out -o classes.dex      
+      
+      if [ "$?" != "0" ]
+      then
+        echo "编译时错误, 中止"
+        error=1
+      else
+
+        echo "-> zip -r -q $file_chosen classes.dex"
+        echo
+        zip -r -q $file_chosen classes.dex
+  
+        if [ "$?" != "0" ]
+        then
+          echo "压缩回classes.dex是错误"
+          error=1
+        fi
+
+        rm -rf out
+        rm -f classes.dex
+
+        if [ -e classes.dex ]
+        then
+          echo "错误: 编译失败, classes.dex 仍然存在!"
+          error=1
+        fi
+
+        if [ -d out ]
+        then
+          echo "错误: 编译失败, 文件夹 $folder/out 仍然存在!"
+          error=1
+        fi
+      fi
+    fi
+
+  else
+    echo "错误: 未找到 $folder/out 文件夹!"
+    error=1
+  fi
+
+  rm -f *smali.jar
+
+else
+  echo 
+  echo "中止"
+  exit 0
+fi
+
+if [ "$error" != "1" ]
+then
+  echo
+  echo "完成"
+fi
+
+cd $orig_folder
+

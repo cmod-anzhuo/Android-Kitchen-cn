@@ -1,0 +1,55 @@
+############################################################################
+#
+# Copyright (c) 2010-2011 dsixda - dislam@rocketmail.com
+#
+# Android Kitchen is 100% free.  This script file is intended for personal
+# and/or educational use only.  It may not be duplicated for monetary
+# benefit or any other purpose without the permission of the developer.
+#
+############################################################################
+
+
+img_dir=$1
+img_file=$2
+
+dos_path=`cygpath -wp $img_dir`
+
+echo 
+echo "#####################################################################"
+echo 
+echo " 从$img_file提取文件前请先阅读指南:"
+echo 
+echo " 1) 确保你安装了MagicISO, 它存在于:"
+echo "    tools/magiciso_windows/Setup_MagicISO.exe"
+echo 
+echo " 2) 启动MagicISO, 选择 'Try It' 并使用 'File->Open Image' 来挂载:"
+echo "    $dos_path\\$img_file"
+echo
+echo "    注意: 看你放文件那里, 在对话框的'File name'中输入'*.rfs'"
+echo
+
+if [ "$img_file" == "cache.rfs" ]
+then
+  echo " 3) 在窗口右顶端,打开 'recovery' 文件夹以便于sec_csc.zip显示"
+  echo
+  echo " 4) 右击sec_csc.zip, 选择'Extract'并选择$dos_path文件夹"
+
+else
+  echo " 3) 在窗口的右顶端,右击文件夹并选择'Select All'"
+  echo 
+  echo " 4) 再次右击,选择提取并选择夹$dos_path文件夹"
+fi
+
+echo
+echo " 5) 等待提取器完成并关闭MagicISO"
+echo      
+echo "#####################################################################"
+echo
+
+echo 
+echo ">>>> 执行完上述步骤后按回车! <<<<"
+echo
+
+scripts/press_enter
+
+

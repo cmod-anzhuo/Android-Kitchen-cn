@@ -1,0 +1,70 @@
+
+echo
+echo "三星 Galaxy S CSC 提取器"
+echo "-------------------------------"
+echo
+echo "这个脚本将从一个原始的三星Galaxy S固件的cache.rfs中提取CSC"
+echo "CSC将变成一个包含carrier-specific和软件的'sec_csc.zip'文件"
+echo
+
+echo -n "继续操作 (y/n)? (默认: y): "
+read do_csc
+echo
+
+if [ "$do_csc" == "n" ]
+then
+  exit 0
+fi
+
+date_str=`date '+%m%d%y_%H%M%S'`
+csc_dir=csc_$date_str
+
+echo
+echo "创建文件夹 `pwd`/$csc_dir ..."
+mkdir $csc_dir
+
+echo
+echo "---> 请把原始的cache.rfs放入上述的文件夹中 <--"
+
+scripts/press_enter
+
+if [ -e $csc_dir/cache.rfs ]
+then
+
+  if [ `uname | grep CYGWIN` ]
+  then
+    scripts/show_magiciso $csc_dir cache.rfs
+  else
+    scripts/extract_ext3_img $csc_dir cache.rfs
+  fi
+
+  rm -f $csc_dir/cache.rfs 2>/dev/null
+  if [ "$?" == "1" ]
+  then
+    echo
+    echo "警告: cache.rfs正在使用中. 在应用程序关闭后手动移除文件."
+    echo
+  fi
+
+  if [ ! -e $csc_dir/sec_csc.zip ]
+  then
+    echo "警告:未发现 sec_csc.zip!"
+    exit 1
+  else
+    echo
+    echo "完成!  你的文件在 $csc_dir/sec_csc.zip."
+    echo
+    echo "你可以解压缩这个文件拷贝内容到你ROM的系统文件夹 'system'"
+    echo "文件夹."
+    echo
+    exit 0
+  fi
+
+else
+  echo "错误:未发现 cache.rfs!"
+  echo
+  cd ..
+  echo "移除 $csc_dir 文件夹"
+  rm -rf csc_dir
+  exit 1
+fi
