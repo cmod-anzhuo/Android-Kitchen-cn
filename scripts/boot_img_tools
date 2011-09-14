@@ -80,6 +80,9 @@ do
   echo "  a = 提取任意文件夹中 boot.img 的内核和 kernel+ramdisk"
   echo "  x = 退出"
   echo
+  echo "  NOTE: Some options will not be shown in this menu until a specific"
+  echo "  action above is selected or a specific working folder is created."
+  echo
   echo -n "? "
 
   read enterLetter

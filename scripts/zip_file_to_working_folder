@@ -80,37 +80,41 @@ then
   mv -v boot_*.img boot.img
 fi 
 
+if [ "`find . -maxdepth 1 | grep .img | grep -c lib_`" == "1" ]
+then
+  echo "重命名 ..."
+  mv -v lib_*.img lib.img
+fi 
+
 
 if [ -e system.img ] && [ ! -d system ]
 then
 
   echo
   echo 找到 system.img
+  mkdir ../temp_img
+  mv system.img ../temp_img
 
   if [ -e boot.img ]
   then
     echo 找到 boot.img
-
-    #
-    # Remove any other files
-    #
-    mkdir ../temp_img
-    mv system.img ../temp_img
     mv boot.img ../temp_img
-    echo
-    rm -vf *
-    mv ../temp_img/* .
-    rmdir ../temp_img
-
-    cd ..
-    scripts/img_files_to_working_folder no_create $2
-    exit $?
-  else
-    echo "错误：未找到 boot.img"
-    echo
-    cd ..
-    exit 1
   fi
+
+  if [ -e lib.img ]
+  then
+    echo "找到 lib.img"
+    mv lib.img ../temp_img
+  fi
+
+  echo
+  rm -vf *
+  mv ../temp_img/* .
+  rmdir ../temp_img
+
+  cd ..
+  scripts/img_files_to_working_folder no_create $2
+  exit $?
 
 
 #

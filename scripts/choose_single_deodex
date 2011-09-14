@@ -77,9 +77,18 @@ then
   do
     echo
     echo "请输入任意指定依赖的 JAR 文件，有多个的话使用冒号隔开(回车=无)："
-    echo -n "$file_chosen > "
+		echo "NOTE: To ignore errors, type 'ignore' by itself or after dependencies"
+		echo    
+		echo -n "$file_chosen > "
     read classfiles
     echo
+
+		if [ "$classfiles" == "ignore" ]
+		then
+			classfiles="none yes"
+		else
+			classfiles=`echo $classfiles | sed -e 's/ ignore/ yes/g'`
+		fi
 
     ../scripts/do_deodex_file $file_chosen system/framework $classfiles 
 

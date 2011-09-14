@@ -78,6 +78,15 @@ then
       echo "无效选项"
     fi
 
+    if [ "$enterNumber" == "1" ] || [ "$enterNumber" == "2" ]
+    then
+      echo
+      echo "--> 如果你对提取感到满意,在下一个菜单选择选项3"
+      echo
+
+      scripts/press_enter
+    fi
+
   done
 
 

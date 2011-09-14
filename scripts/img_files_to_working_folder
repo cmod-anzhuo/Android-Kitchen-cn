@@ -23,15 +23,20 @@ then
   mkdir $build_dir/system
   mv $build_dir/system.img $build_dir/system
 
+  if [ -e $build_dir/lib.img ]
+  then
+    mkdir -p $build_dir/system/lib
+    mv $build_dir/lib.img $build_dir/system/lib
+  fi
+
 else
 
   current_dir=`pwd`
   dest_dir=$current_dir/original_update
   scripts/check_no_bootimg $dest_dir
 
-
   #
-  # Check for system.img and boot.img in original_update  
+  # Check for system.img/boot.img/lib.img in original_update  
   #
   if [ -e original_update/system.img ]
   then
@@ -44,6 +49,12 @@ else
       echo
       exit 1
     fi
+
+    if [ -e original_update/lib.img ]
+    then
+      echo "已发现 original_update/lib.img"
+    fi
+
   else
 
     if [ -e original_update/boot.img ]
@@ -69,9 +80,17 @@ else
   mkdir $build_dir
   mkdir $build_dir/system
 
-  echo "正在复制 boot.img 和 system.img ..."
+  echo "正在复制 boot.img ..."
   cp original_update/boot.img $build_dir
+  echo "正在复制 system.img ..."
   cp original_update/system.img $build_dir/system
+
+  if [ -e original_update/lib.img ]
+  then
+    echo "正在复制 lib.img ..."
+    mkdir -p $build_dir/system/lib
+    cp original_update/lib.img $build_dir/system/lib
+  fi
 
 fi
 
@@ -185,55 +204,109 @@ then
   exit 1
 fi
 
-cd ..
-
-
 
 
 #
-# Check for location of Android header in boot.img so that it can be
-# added to working folder correctly
+# Extract the contents of lib.img, which will go under /system/lib
 #
 
-scripts/check_bootimg_header
-
-# Not a valid boot.img
-if [ "$?" == "1" ]
+if [ -e system/lib/lib.img ]
 then
 
-  scripts/check_galaxy_s
-  is_gs=$?
+  echo 
+  echo "发现 lib.img, 包含/system/lib ..."
 
-  if [ "$is_gs" == "1" ]
+  cd ..
+
+  if [ `uname | grep CYGWIN` ]
   then
-    cp_file=redbend_ua
-  else
-    scripts/check_galaxy_s2
-    is_gs2=$?
-
-    if [ "$is_gs2" == "1" ]
-    then
-      cp_file=flash_image
-    fi
+    scripts/press_enter
   fi
 
-  if [ "$is_gs" == "1" ] || [ "$is_gs2" == "1" ]
+  scripts/extract_ext3_img $system_dir/lib lib.img
+  
+  rm -f $system_dir/lib/lib.img 2>/dev/null
+
+  if [ "$?" == "1" ]
   then
     echo
-    echo "注意: boot.img可能实际上是一个kernel (zImage)代替. 我们将"
-    echo "重命名为 zImage."
+    echo "警告: lib.img使用中. 请在应用程序关闭后手动移除."
     echo
-
-    cd WORKING_*
-    mv -v boot.img zImage
-    echo
-    cp -v ../tools/samsung_files/$cp_file .
-    echo flash_zimage >> META-INF/com/google/android/update-script
-    cd ..
-    scripts/check_no_bootimg 
   fi
+
+  #
+  # Check for empty /system/lib folder
+  #
+  lib_files=`ls $system_dir/lib`
+  if [ "$lib_files" == "lib.img" ] || [ "$lib_files" == "" ]
+  then
+    echo
+    echo "错误: lib.img文件夹为空
+    exit 1
+  fi
+
+else
+  cd ..
+  echo
 fi
 
+
+
+cd WORKING_*
+
+if [ ! -e boot.img ]
+then
+	cd ..
+  scripts/check_no_bootimg
+
+else
+
+	cd ..
+
+	#
+	# Check for location of Android header in boot.img so that it can be
+	# added to working folder correctly
+	#
+
+	scripts/check_bootimg_header
+
+	# Not a valid boot.img
+	if [ "$?" == "1" ]
+	then
+
+		scripts/check_galaxy_s
+		is_gs=$?
+
+		if [ "$is_gs" == "1" ]
+		then
+		  cp_file=redbend_ua
+		else
+		  scripts/check_galaxy_s2
+		  is_gs2=$?
+
+		  if [ "$is_gs2" == "1" ]
+		  then
+		    cp_file=flash_image
+		  fi
+		fi
+
+		if [ "$is_gs" == "1" ] || [ "$is_gs2" == "1" ]
+		then
+		  echo
+                  echo "注意: boot.img可能实际上是一个kernel (zImage)代替. 我们将"
+                  echo "重命名为 zImage."
+		  echo
+
+		  cd WORKING_*
+		  mv -v boot.img zImage
+		  echo
+		  cp -v ../tools/samsung_files/$cp_file .
+		  echo flash_zimage >> META-INF/com/google/android/update-script
+		  cd ..
+		  scripts/check_no_bootimg 
+		fi
+	fi
+fi
 
 
 # Wi-fi fix - required for some Huawei devices

@@ -22,6 +22,7 @@ classfile=$3
 # can be yes/no
 ignore_me=$4
 
+
 if [ "$odex_file" == "" ]
 then
   echo "错误：未指定 .odex 文件"
@@ -31,6 +32,11 @@ then
   echo "正在反编译 $odex_file ..."
 else
   echo "错误：$odex_file 未找到"
+fi
+
+if [ "$classfile" == "none" ]
+then
+	classfile=
 fi
 
 
