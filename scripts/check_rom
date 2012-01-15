@@ -1,6 +1,6 @@
 ############################################################################
 #
-# Copyright (c) 2010-2011 dsixda - dislam@rocketmail.com
+# Copyright (c) 2011 - dsixda (dislam@rocketmail.com)
 #
 # Android Kitchen is 100% free.  This script file is intended for personal
 # and/or educational use only.  It may not be duplicated for monetary
@@ -39,34 +39,9 @@ then
 
 elif [ "$proceed" == "s" ]
 then
-  echo
-  echo "----------------------------------------------------------------------"
-  echo
-  echo "必须选择下面格式的ROM:"
-  echo
-  echo " - system.img + boot.img      (例如 来自官方ROM或是Nandroid备份所得)"
-  echo " - 一个包含 *.img 的zip文件     (例如 来自官方ROM中的rom.zip)"
-  echo "  一个ZIP文件包含 *.img        (例如 rom.zip来自shipped ROM)"
-  echo " - ZIP文件包含shipped的ROM含有SYSTEM和BOOT文件夹格式"
-  echo " - 这个厨房生成的工作目录       (例如： WORKING_old_rom)" 
-  echo
-  echo " 其他格式:"
-  echo
-  echo " 三星 Galaxy S:"
-  echo " - factoryfs.rfs + 可选择 cache.rfs/zImage"
-  echo " - PDA.tar.md5 + 可选择 CSC.tar.md5/PHONE.tar.md5"
-  echo " - PDA.tar + 可选择 CSC.tar/PHONE.tar"
-  echo " - TAR/ZIP 文件包含factoryfs.rfs或更多" 
-  echo " - TAR/ZIP 文件包含PDA.tar.md5/PDA.tar或更多"
-  echo
-  echo " Samsung Galaxy SII:"
-  echo " - factoryfs.img + 可选择 cache.img/zImage"
-  echo " - TAR/ZIP 文件包含的factoryfs.img或更多" 
-  echo
-  echo " 华为:"
-  echo " - 华为软件升级的APP文件 (例如. UPDATE.APP)"
-  echo
-  echo "----------------------------------------------------------------------"
+  
+  more tools/formats.txt
+
   echo
   echo -n "请按回车继续,或者按下 'x'中止: "
   read proceed
@@ -121,19 +96,10 @@ else
 
       if [ -e META-INF/com/google/android/update-script ]
       then
-
         cd ..
         scripts/update_script_should_convert_back ignore_msg
         res=$?
         cd WORKING_*
-
-        if [ "$res" != "1" ]
-        then
-          echo
-          echo "注意：如果你想要添加 radio.img，请将它放在工作目录的根目录"
-          echo "下。当打包ROM时，工具会自动为 update-script 添加上刷写 "
-          echo "radio.img 的相应命令。"
-        fi          
       fi
     fi
 

@@ -1,6 +1,6 @@
 ############################################################################
 #
-# Copyright (c) 2010-2011 dsixda - dislam@rocketmail.com
+# Copyright (c) 2011 - dsixda (dislam@rocketmail.com)
 #
 # Android Kitchen is 100% free.  This script file is intended for personal
 # and/or educational use only.  It may not be duplicated for monetary
@@ -79,6 +79,12 @@ do
     fi
 
 
+    cd ..
+    scripts/convert_to_unix tools/deodex_files/api_level.txt    
+    api_level=`scripts/get_api_level`
+    cd WORKING_*
+
+
     #
     # Show menu choices
     #
@@ -91,6 +97,12 @@ do
     then
       echo " bb  = 备份这两个文件夹 (执行操作前先进行备份)"
     fi
+
+    echo "  v  = 设置 Android OS 版本 (目前 API level = $api_level)"
+    echo
+    echo "       重要: 确保你设置的 API level正确"
+    echo
+
     if [ $num_odex_fr -gt 0 ]
     then
       echo "  f  = Deodex /system/framework"
@@ -117,6 +129,11 @@ do
     if [ "$enterChoice" == "a" ]
     then
       dir_list=app
+    elif [ "$enterChoice" == "v" ]
+    then
+      cd ..
+      scripts/change_api_level
+      continue
     elif [ "$enterChoice" == "f" ] 
     then
       dir_list=framework
@@ -183,8 +200,6 @@ do
   fi
 
   cd ..
-  scripts/convert_to_unix tools/deodex_files/use_this_version.txt
-  scripts/convert_to_unix tools/deodex_files/old_version/use_this_version.txt
   scripts/do_deodex_folder "$dir_list"
 
   cd WORKING_*

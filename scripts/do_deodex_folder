@@ -1,6 +1,6 @@
 ############################################################################
 #
-# Copyright (c) 2010-2011 dsixda - dislam@rocketmail.com
+# Copyright (c) 2011 - dsixda (dislam@rocketmail.com)
 #
 # Android Kitchen is 100% free.  This script file is intended for personal
 # and/or educational use only.  It may not be duplicated for monetary
@@ -27,6 +27,7 @@ then
 fi
 
 base_dir=`pwd`
+api_level=`scripts/get_api_level`
 
 cd WORKING_*
 
@@ -55,6 +56,18 @@ fi
 date_str=`date '+%m%d%y_%H%M%S'`
 log_file=deodex_$date_str.log
 
+cd ..
+version=`scripts/get_smali_version`
+cd WORKING_*
+
+if [ "$do_log" == "y" ]
+then
+  echo
+  echo "创建记录文件 $log_file ..."
+
+  echo "" >> ../$log_file
+  echo "smali/baksmali 版本: $version" >> ../$log_file
+fi
 
 #
 # Go through each folder specified
@@ -65,9 +78,6 @@ do
 
   if [ "$do_log" == "y" ]
   then
-    echo
-    echo "创建记录文件 $log_file ..."
-
     echo "" >> ../$log_file
     echo "文件夹: $folder" >> ../$log_file
     echo "-------------------" >> ../$log_file
@@ -118,14 +128,8 @@ do
     #
     # Finally, deodex each file
     #
-    new_version=`more ../../../tools/deodex_files/use_this_version.txt | sed 's/[ ]*$//g'`
-    echo "--> 尝试这个版本的baksmali/smali: $new_version"    
-    echo
-    version=newer
-    cp -f ../../../tools/deodex_files/baksmali-$new_version.jar baksmali.jar
-    cp -f ../../../tools/deodex_files/smali-$new_version.jar smali.jar
-
-    version_num=$new_version
+    cp -f ../../../tools/deodex_files/baksmali-$version.jar baksmali.jar
+    cp -f ../../../tools/deodex_files/smali-$version.jar smali.jar
 
     for odex_file in $grep_cmd
     do
@@ -133,12 +137,11 @@ do
       count=$(($count+1))
       echo
       echo "NOW AT FILE $count OF $num_odex_folder IN $path: $odex_file"
-      try=1
 
       while [ -e $odex_file ]
       do
 
-        ../../../scripts/do_deodex_file $odex_file ../framework
+        ../../../scripts/do_deodex_file $api_level $odex_file ../framework
         
         #
         # Use brute-force method if it failed
@@ -169,29 +172,10 @@ do
           echo "-> 使用强制办法（如果成功，忽视上面的错误）:"
           echo
 
-          ../../../scripts/do_deodex_file $odex_file ../framework $fr_jar_list
+          ../../../scripts/do_deodex_file $api_level $odex_file ../framework $fr_jar_list
            
-          if [ -e $odex_file ] && [ $try == 2 ]
+          if [ -e $odex_file ] 
           then
-
-            if [ "$do_log" == "y" ]
-            then
-              echo "* 警告: $odex_file (使用强制办法$version_num)" >> ../../../$log_file
-            fi
-
-            if [ $version==older ]
-            then
-              echo
-              echo "--> 恢复新版baksmali/smali ($new_version)"
-              echo
-              version=newer
-              version_num=$new_version
-              cp -f ../../../tools/deodex_files/baksmali-$new_version.jar baksmali.jar
-              cp -f ../../../tools/deodex_files/smali-$new_version.jar smali.jar              
-            fi  
-
-            #echo "Trying $odex_file but ignoring error ..."
-            #../../../scripts/do_deodex_file $odex_file ../framework $fr_jar_list yes
 
             echo "错误: 中止 $odex_file"
             found_error=1
@@ -213,28 +197,6 @@ do
             break
           fi
 
-          if [ $version==newer ]
-          then
-            old_version=`more ../../../tools/deodex_files/old_version/use_this_version.txt | sed 's/[ ]*$//g'`
-            echo
-            echo "尝试使用旧版本baksmali/smali ($old_version)"
-            echo
-            version=older
-            version_num=$old_version
-            cp -f ../../../tools/deodex_files/old_version/baksmali-$old_version.jar baksmali.jar
-            cp -f ../../../tools/deodex_files/old_version/smali-$old_version.jar smali.jar
-          else 
-            echo
-            echo "尝试使用新版本baksmali/smali ($new_version)"
-            echo
-            version=newer
-            version_num=$new_version
-            cp -f ../../../tools/deodex_files/baksmali-$new_version.jar baksmali.jar
-            cp -f ../../../tools/deodex_files/smali-$new_version.jar smali.jar
-          fi
-
-          try=2
-
         else
           if [ "$do_log" == "y" ]
           then
@@ -253,7 +215,8 @@ do
 
     if [ "$found_error" == "1" ]
     then
-      echo "不能deodex下一个 (尝试再次deodex这些文件):"
+      echo
+      echo ""不能deodex下一个 (尝试再次deodex这些文件):"
       echo `ls *.odex`
       echo
       cd ../..

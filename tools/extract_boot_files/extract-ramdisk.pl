@@ -4,13 +4,13 @@ use strict;
 use bytes;
 use File::Path;
 
-die "未指定 boot 镜像文件\n" unless $ARGV[0];
+die "did not specify boot img file\n" unless $ARGV[0];
 
 my $bootimgfile = $ARGV[0];
 
 my $slurpvar = $/;
 undef $/;
-open (BOOTIMGFILE, "$bootimgfile") or die "无法打开 boot 镜像文件：$bootimgfile\n";
+open (BOOTIMGFILE, "$bootimgfile") or die "could not open boot img file: $bootimgfile\n";
 binmode(BOOTIMGFILE);
 my $bootimg = <BOOTIMGFILE>;
 close BOOTIMGFILE;
@@ -31,7 +31,7 @@ my($ram1) = substr($bootimg, $ram1Addr, $ram1Size);
 
 if (substr($ram1, 0, 2) ne "\x1F\x8B")
 {
-	die "此 boot 镜像并非一个有效的  gzip 文件";
+	die "The boot image does not appear to be a valid gzip file";
 }
 
 open (RAM1FILE, ">$ARGV[0]-ramdisk.cpio.gz");
@@ -41,7 +41,7 @@ close RAM1FILE;
 
 if (-e "$ARGV[0]-ramdisk") { 
 	rmtree "$ARGV[0]-ramdisk";
-	print "\n已移除旧的文件夹 $ARGV[0]-ramdisk\n";
+	print "\nremoved old directory $ARGV[0]-ramdisk\n";
 }
 
 mkdir "$ARGV[0]-ramdisk" or die;

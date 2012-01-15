@@ -1,0 +1,73 @@
+############################################################################
+#
+# Copyright (c) 2011 - dsixda (dislam@rocketmail.com)
+#
+# Android Kitchen is 100% free.  This script file is intended for personal
+# and/or educational use only.  It may not be duplicated for monetary
+# benefit or any other purpose without the permission of the developer.
+#
+############################################################################
+
+clear
+
+if [ ! -e tools/deodex_files/api_level.txt ]
+then
+  echo "错误: 不能找到 tools/deodex_files/api_level.txt"
+  scripts/press_enter
+  exit 0
+fi
+
+api_level=`scripts/get_api_level`
+
+echo
+echo "厨房目前的 API level 设置为: $api_level"
+echo "确保你为你的ROM设置正确的API level!"
+echo
+echo "每个 API level 相当于最小的一个Android OS版本."
+echo
+echo "e.g.  Android 4.0       = API Level 14"
+echo "      Android 3.2       = API Level 13"
+echo "      Android 3.1.x     = API Level 12"
+echo "      Android 3.0.x     = API Level 11"
+echo "      Android 2.3.3+    = API Level 10"
+echo "      Android 2.3-2.3.2 = API Level 9"
+echo "      Android 2.2.x     = API Level 8"
+echo
+echo "完整的设置可以在下面网站找到:"
+echo "http://developer.android.com/guide/appendix/api-levels.html"
+echo
+echo -n "改变目前 API level (y/n)? (默认: n): "
+
+read do_change
+echo
+
+if [ "$do_change" != "y" ]
+then
+  echo "Ok, 什么都没有改变"
+else 
+
+  echo -n "请输入新的level号码 (目前: $api_level): "
+  read set_level
+  
+  if [ "`echo $set_level | sed 's/[0-9]*//'`" != "" ]
+  then
+    echo
+    echo "警告: 无效输入 - 什么都不会改变"
+  else    
+
+    echo $set_level > tools/deodex_files/api_level.txt
+    current_level=`scripts/get_api_level`
+
+    echo
+    echo "在api_level.txt, API level现在设置为: $current_level"
+
+    if [ "$current_level" != "$set_level" ]
+    then
+      echo
+      echo "警告: 名称和说明不相同"
+    fi
+  fi
+fi
+
+scripts/press_enter
+

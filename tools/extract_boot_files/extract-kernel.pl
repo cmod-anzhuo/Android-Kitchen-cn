@@ -4,13 +4,13 @@ use strict;
 use bytes;
 use File::Path;
 
-die "未指定 boot 镜像文件\n" unless $ARGV[0];
+die "did not specify boot img file\n" unless $ARGV[0];
 
 my $bootimgfile = $ARGV[0];
 
 my $slurpvar = $/;
 undef $/;
-open (BOOTIMGFILE, "$bootimgfile") or die "无法打开 boot 镜像文件：$bootimgfile\n";
+open (BOOTIMGFILE, "$bootimgfile") or die "could not open boot img file: $bootimgfile\n";
 binmode(BOOTIMGFILE);
 my $bootimg = <BOOTIMGFILE>;
 close BOOTIMGFILE;

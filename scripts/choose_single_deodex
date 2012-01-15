@@ -13,6 +13,9 @@ clear
 
 
 echo
+
+api_level=`scripts/get_api_level`
+
 cd WORKING_*
 
 grep_cmd=`find . | grep \\.odex$ | sort -f`
@@ -67,7 +70,9 @@ then
     exit 0
   fi
 
-  version=`more ../tools/deodex_files/use_this_version.txt | sed 's/[ ]*$//g'`
+  cd ..
+  version=`scripts/get_smali_version`
+  cd WORKING_*
   cp -f ../tools/deodex_files/baksmali-$version.jar baksmali.jar
   cp -f ../tools/deodex_files/smali-$version.jar smali.jar
 
@@ -77,11 +82,20 @@ then
   do
     echo
     echo "请输入任意指定依赖的 JAR 文件，有多个的话使用冒号隔开(回车=无)："
-    echo -n "$file_chosen > "
+		echo "NOTE: To ignore errors, type 'ignore' by itself or after dependencies"
+		echo    
+		echo -n "$file_chosen > "
     read classfiles
     echo
 
-    ../scripts/do_deodex_file $file_chosen system/framework $classfiles 
+		if [ "$classfiles" == "ignore" ]
+		then
+			classfiles="none yes"
+		else
+			classfiles=`echo $classfiles | sed -e 's/ ignore/ yes/g'`
+		fi
+
+    ../scripts/do_deodex_file $api_level $file_chosen system/framework $classfiles 
 
     result=$?
 

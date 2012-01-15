@@ -1,6 +1,6 @@
 ############################################################################
 #
-# Copyright (c) 2010-2011 dsixda - dislam@rocketmail.com
+# Copyright (c) 2011 - dsixda (dislam@rocketmail.com)
 #
 # Android Kitchen is 100% free.  This script file is intended for personal
 # and/or educational use only.  It may not be duplicated for monetary
@@ -61,7 +61,7 @@ cd $build_dir
 
 
 #
-# Check for system.img and boot.img
+# Check for the required IMG files
 #
 
 echo
@@ -80,37 +80,41 @@ then
   mv -v boot_*.img boot.img
 fi 
 
+if [ "`find . -maxdepth 1 | grep .img | grep -c lib_`" == "1" ]
+then
+  echo "重命名 ..."
+  mv -v lib_*.img lib.img
+fi 
+
 
 if [ -e system.img ] && [ ! -d system ]
 then
 
   echo
   echo 找到 system.img
+  mkdir ../temp_img
+  mv system.img ../temp_img
 
   if [ -e boot.img ]
   then
     echo 找到 boot.img
-
-    #
-    # Remove any other files
-    #
-    mkdir ../temp_img
-    mv system.img ../temp_img
     mv boot.img ../temp_img
-    echo
-    rm -vf *
-    mv ../temp_img/* .
-    rmdir ../temp_img
-
-    cd ..
-    scripts/img_files_to_working_folder no_create $2
-    exit $?
-  else
-    echo "错误：未找到 boot.img"
-    echo
-    cd ..
-    exit 1
   fi
+
+  if [ -e lib.img ]
+  then
+    echo "找到 lib.img"
+    mv lib.img ../temp_img
+  fi
+
+  echo
+  rm -vf *
+  mv ../temp_img/* .
+  rmdir ../temp_img
+
+  cd ..
+  scripts/img_files_to_working_folder no_create $2
+  exit $?
 
 
 #
@@ -143,6 +147,39 @@ then
 
 
 #
+# Check for Samsung Galaxy S2 variants such as the Skyrocket
+#
+elif [ -e system.img.ext4 ] 
+then
+
+  echo
+  echo "发现 system.img.ext4"
+  mkdir ../temp_img
+  mv system.img.ext4 ../temp_img
+
+  if [ -e boot.img ]
+  then
+    echo "发现 boot.img"
+    mv boot.img ../temp_img
+  fi
+
+  if [ -e cache.img.ext4 ]
+  then
+    echo "发现 cache.img.ext4"
+    mv cache.img.ext4 ../temp_img
+  fi
+
+  echo
+  rm -vf *
+  mv ../temp_img/* .
+  rmdir ../temp_img
+
+  cd ..
+  scripts/simg_ext4_files_to_working_folder no_create $2
+  exit $?
+
+
+#
 # Check for Samsung Galaxy S stock ROM
 #
 elif [ -e factoryfs.rfs ]
@@ -152,8 +189,6 @@ then
   if [ -e cache.rfs ]
   then
     echo 发现 cache.rfs
-  else
-    echo "警告:未发现cache.rfs"
   fi
 
   if [ -e zImage ]

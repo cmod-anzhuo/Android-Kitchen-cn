@@ -1,6 +1,6 @@
 ############################################################################
 #
-# Copyright (c) 2010-2011 dsixda - dislam@rocketmail.com
+# Copyright (c) 2011 - dsixda (dislam@rocketmail.com)
 #
 # Android Kitchen is 100% free.  This script file is intended for personal
 # and/or educational use only.  It may not be duplicated for monetary
@@ -88,17 +88,33 @@ then
 
 else
 
-  echo
-  echo "检测到非 YAFFS 格式的文件"
-  echo
-
   cd $img_dir
 
-  # Get full path
-  imgr_dir=`pwd`
+  # Check for TAR archive
+  test_tar=`od -A n --strings -j 0 -N 5 data.img`
 
-  cd ..
-  scripts/extract_ext3_img $img_path data.img
+  if [ "$test_tar" == "data/" ]
+  then
+    echo "data.img是一个TAR"
+    echo "提取文件中 ..." 
+
+    # Don't show timestamp warning
+    tar xf data.img 2>/dev/null
+
+    cd ..
+
+  else
+
+    echo
+    echo "检测到非 YAFFS 格式的文件"
+    echo
+
+    # Get full path
+    imgr_dir=`pwd`
+
+    cd ..
+    scripts/extract_ext3_img $img_path data.img
+  fi
 fi
 
 

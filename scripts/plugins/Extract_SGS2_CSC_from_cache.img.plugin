@@ -32,60 +32,78 @@ scripts/press_enter
 
 cd $csc_dir
 
+if [ -e cache.img.ext4 ]
+then
+  mv -fv cache.img.ext4 cache.img
+fi
+
 if [ -e cache.img ]
 then
 
-  #
-  # Compile sigm2img
-  #
+  # Check if needs to be converted with simg2img
+  initial_bytes=`od -A n -h -j 0 -N 6 cache.img | sed 's/ //g'`
 
-  simg2img_file=simg2img
-  if [ `uname | grep CYGWIN` ]
+  if [ "$initial_bytes" == "000000000000" ]
   then
-    simg2img_file=$simg2img_file.exe
-  fi
-
-  if [ -e ../tools/samsung_files/simg2img_files/$simg2img_file ]
-  then
-    echo "发现 $simg2img_file"
+    mv cache.img ext4_cache.img
     cd ..
+
   else
-    echo "编译 simg2img ..."
 
-    cd ../tools/samsung_files/simg2img_files
-    gcc -c sparse_crc32.c
-    gcc sparse_crc32.o simg2img.c -w -o simg2img
-    rm *.o 
-    cd ../../..
+    #
+    # Compile simg2img
+    #
 
-    if [ -e tools/samsung_files/simg2img_files/$simg2img_file ]
+    simg2img_file=simg2img
+    if [ `uname | grep CYGWIN` ]
     then
-      echo "$simg2img_file编译成功"
+      simg2img_file=$simg2img_file.exe
+    fi
+
+    echo
+
+    if [ -e ../tools/samsung_files/simg2img_files/$simg2img_file ]
+    then
+      echo "发现 $simg2img_file"
+      cd ..
     else
-      echo "错误: $simg2img_file编译不成功!"
-      rm -rfv $csc_dir
-      exit 1
-    fi    
-  fi
+      echo "编译 simg2img ..."
 
-  echo
+      cd ../tools/samsung_files/simg2img_files
+      gcc -c sparse_crc32.c
+      gcc sparse_crc32.o simg2img.c -w -o simg2img
+      rm *.o 
+      cd ../../..
 
+      if [ -e tools/samsung_files/simg2img_files/$simg2img_file ]
+      then
+        echo "$simg2img_file编译成功"
+      else
+        echo "错误: $simg2img_file编译不成功!"
+        rm -rfv $csc_dir
+        exit 1
+      fi    
+    fi
 
-  #
-  # Convert to ext4
-  #
+    echo
+  
+
+    #
+    # Convert to ext4
+    #
 
   echo "解开cache.img为ext4格式 ..."
-  tools/samsung_files/simg2img_files/simg2img $csc_dir/cache.img \
-    $csc_dir/ext4_cache.img
-    
-  if [ ! -e $csc_dir/ext4_cache.img ]
-  then
-    echo "无法解开 cache.img!"
-    exit 1
-  fi
+    tools/samsung_files/simg2img_files/simg2img $csc_dir/cache.img \
+      $csc_dir/ext4_cache.img 
+      
+    if [ ! -e $csc_dir/ext4_cache.img ]
+    then
+      echo "无法解开 cache.img!"
+      exit 1
+    fi
 
-  rm -f $csc_dir/cache.img
+    rm -f $csc_dir/cache.img
+  fi
 
   #
   # Extract files from ext4_cache.img

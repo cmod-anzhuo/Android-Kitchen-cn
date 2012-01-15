@@ -33,10 +33,7 @@ then
   then
     mv $build_dir/cache.rfs $build_dir/system
   else
-    echo
-    echo "警告:未发现cache.rfs. 你可以单独解开一个cache.rfs"
-    echo "运行厨房高级菜单选项中的插件脚本."
-    echo
+    scripts/show_cache_warning cache.rfs
   fi
 
   # Sometimes images have zero permissions set when extracted from TAR archive,
@@ -56,10 +53,7 @@ else
     then
       echo "发现 original_update/cache.rfs"
     else
-      echo
-      echo "警告: 未发现original_update/cache.rfs。你可以单独解开一个cache.rfs"
-      echo "运行厨房高级菜单选项中的插件脚本."
-      echo
+      scripts/show_cache_warning original_update/cache.rfs
     fi
   else
 
@@ -232,49 +226,8 @@ then
       echo
     fi
 
-    if [ ! -e sec_csc.zip ]
-    then
-      echo "警告: 未找到sec_csc.zip!"
-    else
-      echo "从sec_csc.zip中提取必须的文件 ..."
-      unzip -q sec_csc.zip -d temp_csc
-
-      # 
-      # Carrier bloatware
-      #
-
-      if [ -d temp_csc/system/app ]
-      then
-        echo
-        echo "这些是在sec_csc.zip中找到的软件:"
-        ls temp_csc/system/app
-        echo
-        echo -n "复制软件到你的工作目录 (y/n)? (默认: n): "
-
-        read do_copy
-        echo
-
-        if [ "$do_copy" != "y" ]
-        then
-          rm -vrf temp_csc/system/app
-        fi
-      fi
-
-      rm -rf temp_csc/META-INF
-      mv temp_csc/system/* .
-      rm -rf temp_csc
-    fi
-
-    rm -f sec_csc.zip 2>/dev/null
-    if [ "$?" == "1" ]
-    then
-      echo
-      echo "警告: sec_csc.zip使用中. 手动移除文件."
-      echo
-    fi
-
     cd ../..
-
+    scripts/unzip_csc
   fi
 fi
 

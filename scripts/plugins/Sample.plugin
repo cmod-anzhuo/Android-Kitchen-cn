@@ -1,13 +1,13 @@
 
 echo
-echo "仅仅是一个示范"
+echo Just a sample
 echo
 
 if [ -d WORKING_* ]
 then
-  echo "已找到工作目录："
+  echo Found working folder
 else
-  echo "未找到工作目录！"
+  echo No working folder found!
   exit 0
 fi
 

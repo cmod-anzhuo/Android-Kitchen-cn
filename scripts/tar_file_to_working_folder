@@ -1,6 +1,6 @@
 ############################################################################
 #
-# Copyright (c) 2010-2011 dsixda - dislam@rocketmail.com
+# Copyright (c) 2011 - dsixda (dislam@rocketmail.com)
 #
 # Android Kitchen is 100% free.  This script file is intended for personal
 # and/or educational use only.  It may not be duplicated for monetary
@@ -47,7 +47,9 @@ mkdir $build_dir
 echo
 echo "提取 ROM ..."
 
-tar xvf original_update/$update_file -C $build_dir -x factoryfs.img cache.img modem.bin zImage
+tar xvf original_update/$update_file -C $build_dir -x factoryfs.img cache.img modem.bin \
+      zImage factoryfs.rfs cache.rfs PDA.tar.md5 CSC.tar.md5 PHONE.tar.md5 PDA.tar CSC.tar \
+      PHONE.tar system.img.ext4 cache.img.ext4 boot.img system 2>/dev/null
 
 cd $build_dir
 
@@ -65,6 +67,18 @@ then
 
   cd ..
   scripts/simg_files_to_working_folder no_create $2
+  exit $?
+
+elif [ -e system.img.ext4 ]
+then
+
+  if [ -e boot.img ]
+  then
+    echo "发现 boot.img"
+  fi
+
+  cd ..
+  scripts/simg_ext4_files_to_working_folder no_create $2
   exit $?
 
 elif [ -e factoryfs.rfs ]
@@ -94,6 +108,29 @@ then
   cd ..
   scripts/sgs_tarmd5_files_to_working_folder no_create $2
   exit $?
+
+
+elif [ -d system ]
+then
+
+  mkdir -p META-INF/com/google/android
+  echo
+  echo "添加一个update-script ..."
+  cp ../tools/update_files/update-script META-INF/com/google/android/
+
+  cd ..
+  if [ "$2" != "kernel_only" ] && [ "$2" != "name_given" ]
+  then
+
+    scripts/fix_update_script 
+
+    # Modify the update-script with features found
+    scripts/fix_update_script_with_features
+    
+    scripts/remove_recovery
+  fi
+    
+  exit 0
 
 else
   echo "错误:未在TAR压缩包里发现image文件!"

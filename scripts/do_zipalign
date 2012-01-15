@@ -1,6 +1,6 @@
 ############################################################################
 #
-# Copyright (c) 2010-2011 dsixda - dislam@rocketmail.com
+# Copyright (c) 2011 - dsixda (dislam@rocketmail.com)
 #
 # Android Kitchen is 100% free.  This script file is intended for personal
 # and/or educational use only.  It may not be duplicated for monetary
@@ -88,7 +88,7 @@ fi
 echo
 cd WORKING_*
 
-grep_cmd=`find . | grep .apk$ | sort -f`
+grep_cmd=`find . -type f | grep \\.apk$ | sort -f`
 
 name1=
 

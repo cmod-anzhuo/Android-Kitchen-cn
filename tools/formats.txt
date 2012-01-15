@@ -1,0 +1,34 @@
+
+----------------------------------------------------------------------
+
+The format for each ROM must be one of the following:
+ 
+ - system.img + 可选择的 boot.img/lib.img  (例如 来自官方ROM或是Nandroid备份所得)
+ - 一个包含自定义ROM的ZIP                  (例如 update.zip)
+ - 一个包含 *.img 的zip文件                (例如 来自官方ROM中的rom.zip)
+ - ZIP文件包含shipped的ROM含有SYSTEM和BOOT文件夹格式
+ - 这个厨房生成的工作目录                   (例如： WORKING_old_rom)
+ 
+ 其他格式:
+ 
+ Samsung Galaxy S:
+ - factoryfs.rfs + 可选择 cache.rfs/zImage
+ - PDA.tar.md5 + 可选择 CSC.tar.md5/PHONE.tar.md5
+ - PDA.tar + 可选择 CSC.tar/PHONE.tar
+ - TAR/ZIP 文件包含factoryfs.rfs或更多 
+ - TAR/ZIP 文件包含PDA.tar.md5/PDA.tar或更多
+
+ Samsung Galaxy S Plus:
+ - system.img.ext4 + 可选择 cache.img.ext4/boot.img
+ - TAR/ZIP 文件包含 system.img.ext4 或更多 
+ 
+ Samsung Galaxy SII:
+ - factoryfs.img + 可选择 cache.img/zImage 
+ - system.img.ext4 + 可选择 cache.img.ext4/boot.img
+ - TAR/ZIP文件包含的 factoryfs.img/system.img.ext4 或更多 
+ 
+ Huawei:
+ - 华为软件升级的APP文件 (例如. UPDATE.APP)
+
+ ----------------------------------------------------------------------
+ 

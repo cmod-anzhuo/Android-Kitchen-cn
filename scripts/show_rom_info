@@ -1,6 +1,6 @@
 ############################################################################
 #
-# Copyright (c) 2010-2011 dsixda - dislam@rocketmail.com
+# Copyright (c) 2011 - dsixda (dislam@rocketmail.com)
 #
 # Android Kitchen is 100% free.  This script file is intended for personal
 # and/or educational use only.  It may not be duplicated for monetary
@@ -37,13 +37,15 @@ fi
 
 
 #
-# Check if Samsung Galaxy S2 or equivalent
+# Check if Samsung Galaxy S/S2
 #
 
-scripts/check_galaxy_sx
-is_galaxy_s=$?
+scripts/check_galaxy_s_and_s2
+is_galaxy_ss2=$?
+scripts/check_galaxy_s2x
+is_galaxy_s2x=$?
 
-if [ "$is_galaxy_s" == "1" ]
+if [ "$is_galaxy_ss2" == "1" ]
 then
   scripts/extract_initramfs
 else
@@ -288,7 +290,35 @@ cd ..
 
 
 
-if [ "$is_galaxy_s" == "1" ]
+#
+# Check for CSC version
+#
+
+echo -n "."
+cd WORKING_*
+
+show_csc=no
+
+if [ -e system/CSCVersion.txt ] || [ "$is_galaxy_ss2" == "1" ] || [ "$is_galaxy_s2x" == "1" ] || [ "$device_name" == "GT-I9001" ]
+then
+
+  show_csc=yes
+
+  if [ -e system/CSCVersion.txt ]
+  then
+    csc_version=`more system/CSCVersion.txt | sed 's/[ ]*$//g'`
+  else
+    csc_version=UNKNOWN
+  fi
+
+fi
+
+cd ..
+
+
+
+
+if [ "$is_galaxy_ss2" == "1" ]
 then
 
   #
@@ -303,17 +333,6 @@ then
     modem_status=YES
   else
     modem_status=NO
-  fi
-
-  #
-  # Check for CSC version
-  #
-
-  if [ -e system/CSCVersion.txt ]
-  then
-    csc_version=`more system/CSCVersion.txt | sed 's/[ ]*$//g'`
-  else
-    csc_version=UNKNOWN
   fi
 
   cd ..
@@ -458,7 +477,8 @@ echo " /system/app 已经 deodex          : $deodex_app_status"
 if [ "$is_galaxy_s" == "1" ]
 then
   echo " 发现modem.bin                : $modem_status"
-else
+elif [ "$is_galaxy_s2x" != "1" ]
+then
   echo " 发现radio.img                    : $radio_status"
 fi
 

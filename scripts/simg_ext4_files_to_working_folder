@@ -1,0 +1,348 @@
+############################################################################
+#
+# Copyright (c) 2011 - dsixda (dislam@rocketmail.com)
+#
+# Android Kitchen is 100% free.  This script file is intended for personal
+# and/or educational use only.  It may not be duplicated for monetary
+# benefit or any other purpose without the permission of the developer.
+#
+############################################################################
+
+#
+# This script has two optional arguments:
+#
+# $1 = "no_create" or "create" or "create_working 
+#         - must specify no_create if working folder already exists
+# $2 = "kernel_only" or "name_given" - if this is specified then $1 is mandatory
+#
+
+if [ "$1" == "no_create" ] 
+then
+  build_dir=`ls | grep -m 1 ^WORKING_`
+
+  if [ ! -e $build_dir/system.img.ext4 ]
+  then
+    echo "错误: 没有发现 $build_dir/system.img.ext4!"
+    exit 1
+  fi
+
+  if [ ! -d $build_dir/system ]
+  then
+    mkdir $build_dir/system
+  fi
+
+  mv $build_dir/system.img.ext4 $build_dir/system
+
+  if [ -e $build_dir/cache.img.ext4 ]
+  then
+    mv $build_dir/cache.img.ext4 $build_dir/system
+  else
+    scripts/show_cache_warning cache.img.ext4
+  fi
+
+  # Sometimes images have zero permissions set when extracted from TAR archive,
+  # making them unreadable!
+  chmod -R 777 $build_dir
+
+else
+
+  #
+  # Check for system.img.ext4, cache.img.ext4 and boot.img in original_update  
+  #
+  if [ -e original_update/system.img.ext4 ]
+  then
+    echo "发现 original_update/system.img.ext4"
+
+    if [ -e original_update/cache.img.ext4 ]
+    then
+      echo "发现 original_update/cache.img.ext4"
+    else
+      scripts/show_cache_warning original_update/cache.img.ext4
+    fi
+  else
+
+    if [ -e original_update/cache.img.ext4 ]
+    then
+      echo "发现 original_update/cache.img.ext4"
+      echo "错误: 没有发现 original_update/system.img.ext4"
+    else
+      echo
+      echo "错误: 没有在original_update文件夹下发现ROM!"
+    fi
+
+    exit 1
+  fi
+
+  if [ -e original_update/boot.img ]
+  then
+    echo "发现 original_update/boot.img"
+  else
+    echo "警告:没有发现original_update/boot.img"
+  fi
+
+
+  #
+  # Working folder name
+  #
+  build_dir=`scripts/set_working_folder_name $2`
+
+  echo
+  echo "创建工作目录文件夹 $build_dir ..."
+  mkdir $build_dir
+  mkdir $build_dir/system
+
+  # Kernel is optional
+  if [ -e original_update/boot.img ]
+  then
+    echo 复制 boot.img ...
+    cp original_update/boot.img $build_dir
+  fi
+
+fi
+
+echo
+
+
+
+if [ "$1" == "no_create" ]
+then
+  src_dir=$build_dir/system
+else
+  src_dir=original_update
+fi
+
+
+system_dir=$build_dir/system
+
+
+#
+# Compile simg2img if necessary
+#
+
+echo
+echo "分析 system.img.ext4 ..."
+sys_bytes=`od -A n -h -j 0 -N 6 $src_dir/system.img.ext4 | sed 's/ //g'`
+
+if [ -e $src_dir/cache.img.ext4 ]
+then
+  echo "分析 cache.img.ext4 ..."
+  cache_bytes=`od -A n -h -j 0 -N 6 $src_dir/system.img.ext4 | sed 's/ //g'`
+else
+  cache_bytes="000000000000"
+fi
+
+if [ "$sys_bytes" != "000000000000" ] || [ "$cache_bytes" != "000000000000" ]
+then
+  echo
+  scripts/compile_simg2img
+  if [ "$?" == "1" ]
+  then
+    exit 1
+  fi
+fi
+
+
+
+cd $system_dir
+
+# Get full path
+system_dir=`pwd`
+cd ../..
+
+
+#
+# Convert system.img.ext4 to ext4
+#
+
+if [ "$sys_bytes" == "000000000000" ]
+then
+  cp $src_dir/system.img.ext4 $system_dir/ext4_system.img
+
+else 
+
+  echo
+  echo "转换 system.img.ext4 格式来解包 ..."
+  tools/samsung_files/simg2img_files/simg2img $src_dir/system.img.ext4 \
+    $system_dir/ext4_system.img 
+
+  if [ ! -e $system_dir/ext4_system.img ]
+  then
+    echo "无法转换 system.img.ext4!"
+    exit 1
+  fi
+
+  rm -rf $system_dir/system.img.ext4
+fi
+
+
+#
+# Directory tree
+#
+
+if [ ! -e $build_dir/META-INF/com/google/android/update-script ]
+then
+  mkdir -p $build_dir/META-INF/com/google/android
+  echo
+  echo "添加一个update-script ..."
+  cp tools/update_files/update-script $build_dir/META-INF/com/google/android/
+fi
+
+
+#
+# Extract files from ext4_system.img
+#
+
+if [ `uname | grep CYGWIN` ]
+then
+  scripts/show_ext2explore $system_dir ext4_system.img
+else
+  scripts/extract_ext3_img $system_dir ext4_system.img
+fi
+
+cd $system_dir
+
+rm -f ext4_system.img 2>/dev/null
+if [ "$?" == "1" ]
+then
+  echo
+  echo "警告: ext4_system.img 使用中.  关闭应用程序后手动移除文件."
+  echo
+fi
+
+cd ..
+
+if [ ! -d system ]
+then
+  echo
+  echo "错误:  没有发现 /system 文件夹!"
+  exit 1
+fi
+
+if [ ! -d system/framework ]
+then
+  echo
+  echo "错误: 没有发现 /system/framework 文件夹!"
+  exit 1
+fi
+
+if [ ! -d system/app ]
+then
+  echo
+  echo "错误: 没有发现 /system/app 文件夹!"
+  exit 1
+fi
+
+if [ "`ls system`" == "" ]
+then
+  echo 
+  echo "错误: /system 文件夹为空!"
+  echo
+  exit 1
+fi
+
+
+cd ..
+
+echo
+echo "ext4_system.img文件已完全解包到:"
+echo "  $system_dir"
+
+
+if [ -e $src_dir/cache.img.ext4 ]
+then
+  echo
+  echo "您想要提取自定义软件(CSC)"
+  echo -n "从 cache.img.ext4 (y/n)? (默认: y): "
+
+  read do_extract
+  echo
+
+  if [ "$do_extract" == "n" ]
+  then
+    rm -vf $src_dir/cache.img.ext4
+    echo
+  else
+
+    if [ "$cache_bytes" == "000000000000" ]
+    then
+      cp -v $src_dir/cache.img.ext4 $system_dir/ext4_cache.img
+
+    else
+
+      #
+      # Convert cache.img.ext4 to ext4
+      #
+      echo "转换 cache.img.ext4 格式解包 ..."
+      tools/samsung_files/simg2img_files/simg2img $src_dir/cache.img.ext4 \
+        $system_dir/ext4_cache.img
+
+      if [ ! -e $system_dir/ext4_cache.img ]
+      then
+        echo "无法转换 cache.img.ext4!"
+        exit 1
+      fi
+
+      rm -rf $system_dir/cache.img.ext4
+    fi
+
+    #
+    # Extract files from ext4_cache.img
+    #
+    if [ `uname | grep CYGWIN` ]
+    then
+      scripts/show_linux_reader $system_dir ext4_cache.img
+    else
+      scripts/extract_ext3_img $system_dir ext4_cache.img
+    fi
+
+    cd $system_dir 
+
+    rm -f ext4_cache.img 2>/dev/null
+    if [ "$?" == "1" ]
+    then
+      echo
+      echo "警告: ext4_cache.img 使用中.  关闭应用程序后手动删除."
+      echo
+    fi
+
+    cd ../..
+    scripts/unzip_csc $build_dir
+  fi
+fi
+
+
+
+cd $build_dir
+
+if [ ! -e boot.img ]
+then
+  cd ..
+  scripts/check_no_bootimg
+else
+  cd ..
+fi
+
+
+
+#
+# update-script and other adjustments
+#
+if [ "$2" != "kernel_only" ] && [ "$2" != "name_given" ]
+then
+  scripts/fix_update_script 
+
+  # Modify the update-script with features found in Nandroid backup
+  scripts/fix_update_script_with_features
+
+  scripts/remove_recovery
+fi
+
+
+echo
+echo $build_dir列表:
+echo
+ls -l $build_dir
+
+echo
+echo "设置工作目录完成!"
+
