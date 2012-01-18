@@ -180,6 +180,33 @@ then
 
 
 #
+# Check for Samsung Galaxy S2 Nandroid backup
+#
+elif [ -e system.ext4.tar ] 
+then
+
+  echo
+  echo "发现 system.ext4.tar"
+  mkdir ../temp_img
+  mv system.ext4.tar ../temp_img
+
+  if [ -e boot.img ]
+  then
+    echo "发现 boot.img"
+    mv boot.img ../temp_img
+  fi
+
+  echo
+  rm -vf *
+  mv ../temp_img/* .
+  rmdir ../temp_img
+
+  cd ..
+  scripts/sext4_tar_files_to_working_folder no_create $2
+  exit $?
+
+
+#
 # Check for Samsung Galaxy S stock ROM
 #
 elif [ -e factoryfs.rfs ]

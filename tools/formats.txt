@@ -26,6 +26,7 @@ The format for each ROM must be one of the following:
  - factoryfs.img + 可选择 cache.img/zImage 
  - system.img.ext4 + 可选择 cache.img.ext4/boot.img
  - TAR/ZIP文件包含的 factoryfs.img/system.img.ext4 或更多 
+ - system.ext4.tar + 可选择 boot.img (Nandroid备份)
  
  Huawei:
  - 华为软件升级的APP文件 (例如. UPDATE.APP)
