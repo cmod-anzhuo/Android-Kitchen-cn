@@ -269,7 +269,7 @@ then
     fi
 
     cd ../..
-
+    scripts/unzip_csc $build_dir
   fi
 fi
 

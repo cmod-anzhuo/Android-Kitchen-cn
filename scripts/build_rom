@@ -410,7 +410,7 @@ then
   echo
   echo "复制ROM到你的储存卡中，然后进入recovery将其刷入手机。"
   echo
-  
+
   echo "如果需要的话，记的先执行wipe操作！"
   echo
   echo "如果你的ROM不能启动,请参阅FAQ中的故障诊断."

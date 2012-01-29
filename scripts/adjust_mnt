@@ -19,7 +19,7 @@ then
 
   if [ "$1" != "updater-script" ] && [ "$1" != "update-script" ]
   then
-    echo "Error: Specified '$1' instead of updater-script or update-script"
+    echo "错误: 指定的 '$1' 代替 updater-script 或 update-script"
     exit 1
   fi
 
@@ -53,7 +53,7 @@ then
   fi    
 
   echo
-  echo "�豸���� = $device_name"
+  echo "设备名称 = $device_name"
 
   change_mnt=`scripts/get_edify_def_val $device_name change_mnt`
   change_mnt_dell=`scripts/get_edify_def_val $device_name change_mnt_dell`

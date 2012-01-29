@@ -157,7 +157,7 @@ else
     cp -fv ../tools/nano_files/nano system/xbin/
     cd ..
   else 
-    echo "已找到 $nano_path"
+    echo "已找到 nano binary"
   fi
 
   scripts/add_nano_to_update_script

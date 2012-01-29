@@ -107,7 +107,7 @@ cp tools/update_files/update-script $build_dir/META-INF/com/google/android/
 
 
 #
-# Check for YAFFS/EXT*
+# Check for YAFFS/TAR/EXT*
 #
 
 system_dir=$build_dir/system
