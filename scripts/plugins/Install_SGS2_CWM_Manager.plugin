@@ -3,7 +3,7 @@ echo
 echo "SGS2 ClockworkMod Manager by Chainfire"
 echo "--------------------------------------"
 echo
-echo "这个脚本将安装ClockworkMod Manager软件到Samsung Galaxy S2.
+echo "这个脚本将安装ClockworkMod Manager软件到Samsung Galaxy S2."
 echo "这个必须你使用自定义的recovery菜单和没有使用CF-Root zImage"
 echo
 echo "注意: 你仍然需要一个custom/rooted内核来运行这个软件."

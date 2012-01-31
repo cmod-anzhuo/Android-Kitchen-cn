@@ -216,7 +216,7 @@ do
     if [ "$found_error" == "1" ]
     then
       echo
-      echo ""不能deodex下一个 (尝试再次deodex这些文件):"
+      echo "不能deodex下一个 (尝试再次deodex这些文件):"
       echo `ls *.odex`
       echo
       cd ../..
