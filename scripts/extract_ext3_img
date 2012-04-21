@@ -1,6 +1,6 @@
 ############################################################################
 #
-# Copyright (c) 2011 - dsixda (dislam@rocketmail.com)
+# Copyright (c) 2012 - dsixda (dislam@rocketmail.com)
 #
 # Android Kitchen is 100% free.  This script file is intended for personal
 # and/or educational use only.  It may not be duplicated for monetary
@@ -143,61 +143,132 @@ elif [ `sw_vers | grep -o Mac` ]
 then
   
   #
-  # Mac support - with help from he8us
+  # Mac support 
+  # - Thanks to he8us for adding the FUSE routine
   #
 
-  res=`which fuse-ext2 2>/dev/null`
-  result=$?
+  cd $img_dir
 
-  if [ "$result" == "0" ]
+  rfs_list=`ls | grep -i \\.rfs$`
+
+  # Mount files for RFS
+  if [ "$rfs_list" != "" ]
   then
 
-    cd $img_dir
+    mount_dir=/Volumes/RFS
 
-    echo "已安装 Fuse"
-    mv $img_file ../$img_file
-    cd ..
-    mkdir /tmp/for_kitchen/
+    echo "We'll need to do some superuser stuff here"
+    if [ -d $mount_dir ]
+    then
+      #sudo umount $mount_dir 2>/dev/null
+      sudo diskutil umount force $mount_dir 2>/dev/null
+    fi
+
+    sudo mkdir $mount_dir 2>/dev/null
+    sudo hdiutil attach -imagekey diskimage-class=CRawDiskImage -nomount $img_file > temp.log
+    mydisk=`more temp.log | sed -e 's/[ \t]*$//g'`
+    rm -f temp.log
+
+    sudo mount_msdos $mydisk $mount_dir
+
+  # Check FUSE - for EXT2/EXT3
+  else
+
+    res=`which fuse-ext2 2>/dev/null`
+    result=$?
+
+    if [ "$result" != "0" ]
+    then
+      fuse_cmd="/usr/local/bin/fuse-ext2"
+      res=`which $fuse_cmd 2>/dev/null`
+      result=$?
+
+      if [ "$result" != "0" ]
+      then
+        echo
+        echo "您的系统没有安装 FUSE."
+        echo "请阅读Android Kitchen 问题指南来安装MacFUSE, 然后fuse-ext2."
+        exit 1
+      fi
+
+    else
+      fuse_cmd=fuse-ext2
+    fi
+
+    mount_dir=/tmp/for_kitchen
+
+  fi
+
+
+  #
+  # Now extract the files for Mac
+  #
+
+  cd $base_dir
+  cd $img_dir
+
+  echo
+  echo "准备从 $img_file 提取文件"
+  mv $img_file ../$img_file
+  cd ..
+
+  # For FUSE
+  if [ "$rfs_list" == "" ] 
+  then
+    if [ -d $mount_dir ]
+    then
+      umount $mount_dir
+      rm -rf $mount_dir
+    fi
+
+    mkdir $mount_dir
 
     echo "正在尝试挂载文件系统"
-    buffer=`fuse-ext2 $img_file /tmp/for_kitchen/`
+    buffer=`$fuse_cmd $img_file $mount_dir`
     echo "已挂载文件系统"
-    listing=`ls /tmp/for_kitchen/`
+  fi
+
+  listing=`ls $mount_dir`
     echo "已列出文件系统，分析中"
-    
-    if [ "$listing" != "" ]
-    then
+  
+  if [ "$listing" != "" ]
+  then
 
       echo "正在复制文件"
 
-      if [ "$img_file" == "ext4_cache.img" ]
-      then
-        cp /tmp/for_kitchen/recovery/sec_csc.zip .
-      else
-        cp -R /tmp/for_kitchen/ $img_dir/
-      fi
-
-      umount /tmp/for_kitchen/
-      rmdir /tmp/for_kitchen/
-      mv $img_file $img_dir/$img_file
-      cd system
-
-      rm -f unyaffs*stackdump
-
-      cd $base_dir
-
+    if [ "$img_file" == "ext4_cache.img" ] || [ "$img_file" == "cache.rfs" ]
+    then
+      cp $mount_dir/recovery/sec_csc.zip system/
     else
-      echo "挂载文件系统失败：挂载点为空"
-      echo $listing
-      rmdir /tmp/for_kitchen/
-      cd $base_dir
-      exit 1
+      cp -r $mount_dir/* $img_dir/
     fi
 
   else
-    echo "你的系统中未安装 fuse。"
-    echo "请通过在Google中搜索 MacFuse 和 fuse-ext2 来进行安装。"
+    echo "错误: 挂载点为空"
+    echo $listing
   fi
+
+  if [ "$rfs_list" == "" ]
+  then
+    umount $mount_dir
+    rm -rf $mount_dir
+  else
+    #sudo umount $mount_dir
+    sudo diskutil umount force $mount_dir    
+    hdiutil detach $mydisk
+  fi
+
+  mv $img_file $img_dir/$img_file
+  cd system
+
+  if [ "$listing" != "" ]
+  then
+    rm -f unyaffs*stackdump
+    cd $base_dir
+  else
+    exit 1
+  fi
+
 fi
 
 
